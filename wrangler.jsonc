@@ -2,7 +2,7 @@
   // Настройки Cloudflare Workers. По ним Cloudflare сам собирает и обновляет сервер бота
   // после каждого изменения в GitHub.
   "name": "fullhouse-bot",
-  "main": "bot.js",
+  "main": "worker/bot.js",
   "compatibility_date": "2025-09-01",
   // Общее состояние клуба (остатки, кабинки, заказы) хранится в одном Durable Object.
   "durable_objects": { "bindings": [{ "name": "CLUB", "class_name": "Club" }] },

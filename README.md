@@ -12,7 +12,7 @@ Telegram Mini App клуба Full House: кабинки PlayStation, калья�
 | `index.html` | Готовая страница. Её отдаёт GitHub Pages и открывает бот. Руками не править. |
 | `worker/bot.js` | Сервер на Cloudflare Workers: бот и API для страницы. |
 | `worker/core.js` | Правила клуба: остатки, кабинки, заказы, доступ к кассе. |
-| `worker/wrangler.jsonc` | Настройки Cloudflare. Корневая папка сборки — `worker`. |
+| `wrangler.jsonc` | Настройки Cloudflare. Лежит в корне, поэтому при подключении репозитория ничего указывать не нужно. |
 
 ## Как это работает вживую
 
