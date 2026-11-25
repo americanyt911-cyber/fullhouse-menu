@@ -195,8 +195,9 @@ export default {
     if (url.pathname === '/setup') {
       const hook = await tg(env, 'setWebhook', { url: url.origin + '/webhook', secret_token: secret, allowed_updates: ['message', 'callback_query'] });
       const cmds = await tg(env, 'setMyCommands', { commands: [{ command: 'start', description: 'Открыть меню' }] });
-      const ok = hook.ok && cmds.ok;
-      return text(ok ? 'Готово. Бот подключён, нажмите Start в Telegram.' : 'Не получилось: ' + JSON.stringify({ hook, cmds }), ok ? 200 : 502);
+      const menu = await tg(env, 'setChatMenuButton', { menu_button: { type: 'web_app', text: 'Меню', web_app: { url: APP_URL } } });
+      const ok = hook.ok && cmds.ok && menu.ok;
+      return text(ok ? 'Готово. Бот подключён, нажмите Start в Telegram.' : 'Не получилось: ' + JSON.stringify({ hook, cmds, menu }), ok ? 200 : 502);
     }
 
     return text('Full House bot работает. Версия с общими остатками.');
