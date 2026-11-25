@@ -1,7 +1,10 @@
 {
-  // Настройки для Cloudflare Workers: позволяют подключить этот репозиторий к воркеру,
-  // чтобы код бота обновлялся сам после каждого изменения в GitHub.
+  // Настройки Cloudflare Workers. По ним Cloudflare сам собирает и обновляет сервер бота
+  // после каждого изменения в GitHub.
   "name": "fullhouse-bot",
   "main": "bot.js",
-  "compatibility_date": "2025-09-01"
+  "compatibility_date": "2025-09-01",
+  // Общее состояние клуба (остатки, кабинки, заказы) хранится в одном Durable Object.
+  "durable_objects": { "bindings": [{ "name": "CLUB", "class_name": "Club" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Club"] }]
 }

@@ -1,0 +1,55 @@
+{
+  "currency": "сум",
+  "cabins": [
+    {"n":1,"gen":"PS5","vip":true,"price":50000,"tv":"65″ 4K","pads":4,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},
+    {"n":2,"gen":"PS5","vip":false,"price":40000,"tv":"55″ 4K","pads":2,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},
+    {"n":3,"gen":"PS4","vip":false,"price":25000,"tv":"50″","pads":2,"games":["FIFA 23","Mortal Kombat 11","Tekken 7","GTA V"]},
+    {"n":4,"gen":"PS4","vip":false,"price":25000,"tv":"50″","pads":2,"games":["FIFA 23","Mortal Kombat 11","Tekken 7","GTA V"]},
+    {"n":5,"gen":"PS4","vip":false,"price":25000,"tv":"43″","pads":2,"games":["FIFA 23","Mortal Kombat 11","UFC 4","GTA V"]},
+    {"n":6,"gen":"PS4","vip":false,"price":25000,"tv":"43″","pads":2,"games":["FIFA 23","Mortal Kombat 11","UFC 4","GTA V"]},
+    {"n":7,"gen":"PS3","vip":false,"price":15000,"tv":"40″","pads":2,"games":["PES 2013","Mortal Kombat 9","Tekken Tag 2","GTA V"]},
+    {"n":8,"gen":"PS3","vip":false,"price":15000,"tv":"40″","pads":2,"games":["PES 2013","Mortal Kombat 9","Tekken Tag 2","GTA V"]}
+  ],
+  "hookahTotal": 6,
+  "hookahs": [
+    {"id":"h1","name":"Классический","desc":"Глиняная чаша, один вкус или микс","price":80000,"str":2},
+    {"id":"h2","name":"На грейпфруте","desc":"Фруктовая чаша, свежий и кислый","price":110000,"str":2},
+    {"id":"h3","name":"На ананасе","desc":"Большая фруктовая чаша на компанию","price":140000,"str":1},
+    {"id":"h4","name":"Premium","desc":"Тёмные табаки, плотный дым","price":130000,"str":3},
+    {"id":"h5","name":"Безникотиновый","desc":"Чайная смесь, вкус на выбор","price":80000,"str":0}
+  ],
+  "tobacco": ["MustHave","Spectrum","Северный"],
+  "flavors": ["Двойное яблоко","Мята","Арбуз","Дыня","Черника","Виноград","Персик","Манго","Лимон-лайм","Вишня"],
+  "drinks": [
+    {"id":"d1","cat":"Газировка","name":"Coca-Cola","unit":["0,5","л"],"price":12000,"stock":24,"cap":30},
+    {"id":"d2","cat":"Газировка","name":"Fanta","unit":["0,5","л"],"price":12000,"stock":11,"cap":30},
+    {"id":"d3","cat":"Газировка","name":"Sprite","unit":["0,5","л"],"price":12000,"stock":3,"cap":30},
+    {"id":"d4","cat":"Газировка","name":"Coca-Cola","unit":["1","л"],"price":18000,"stock":8,"cap":12},
+    {"id":"d5","cat":"Энергетики","name":"Red Bull","unit":["0,25","л"],"price":30000,"stock":9,"cap":24},
+    {"id":"d6","cat":"Энергетики","name":"Adrenaline Rush","unit":["0,45","л"],"price":22000,"stock":0,"cap":24},
+    {"id":"d7","cat":"Энергетики","name":"Burn","unit":["0,45","л"],"price":20000,"stock":6,"cap":24},
+    {"id":"d8","cat":"Вода и соки","name":"Вода без газа","unit":["0,5","л"],"price":5000,"stock":40,"cap":48},
+    {"id":"d9","cat":"Вода и соки","name":"Вода с газом","unit":["0,5","л"],"price":5000,"stock":17,"cap":48},
+    {"id":"d10","cat":"Вода и соки","name":"Сок яблочный","unit":["0,33","л"],"price":10000,"stock":5,"cap":20},
+    {"id":"d11","cat":"Вода и соки","name":"Холодный чай","unit":["0,5","л"],"price":12000,"stock":2,"cap":20},
+    {"id":"d12","cat":"Горячее","name":"Чай чёрный","unit":["0,8","л"],"price":20000,"stock":null},
+    {"id":"d13","cat":"Горячее","name":"Чай зелёный","unit":["0,8","л"],"price":20000,"stock":null},
+    {"id":"d14","cat":"Горячее","name":"Американо","unit":["200","мл"],"price":15000,"stock":null}
+  ],
+  "snacks": [
+    {"id":"s1","cat":"Сеты","name":"Сет 1","desc":"Курт, сырные палочки, сушки, кешью","price":100000,"stock":null},
+    {"id":"s2","cat":"Сеты","name":"Сет 2","desc":"Курт, сырные палочки, чипсы, кешью, семечки","price":125000,"stock":null},
+    {"id":"s3","cat":"Сеты","name":"Сет 3","desc":"Чипсы, курт, семечки","price":75000,"stock":null},
+    {"id":"s4","cat":"Снеки","name":"Чипсы Lays","price":20000,"stock":12,"cap":20},
+    {"id":"s5","cat":"Снеки","name":"Чипсы Pringles","price":40000,"stock":6,"cap":12},
+    {"id":"s6","cat":"Снеки","name":"Курт Ermak","price":15000,"stock":9,"cap":20},
+    {"id":"s7","cat":"Снеки","name":"Курт","price":15000,"stock":14,"cap":20},
+    {"id":"s8","cat":"Снеки","name":"Сырные палочки","price":20000,"stock":4,"cap":15},
+    {"id":"s9","cat":"Снеки","name":"Кешью","price":20000,"stock":7,"cap":15},
+    {"id":"s10","cat":"Снеки","name":"Сушки","price":15000,"stock":10,"cap":15},
+    {"id":"s11","cat":"Снеки","name":"Семечки","unit":["150","гр"],"price":25000,"stock":8,"cap":20},
+    {"id":"s12","cat":"Снеки","name":"Семечки","unit":["100","гр"],"price":20000,"stock":2,"cap":20},
+    {"id":"s13","cat":"Снеки","name":"Кириешки","price":15000,"stock":18,"cap":30},
+    {"id":"s14","cat":"Снеки","name":"Гренки","price":15000,"stock":0,"cap":15}
+  ]
+}

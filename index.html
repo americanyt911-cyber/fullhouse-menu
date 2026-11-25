@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#06050a">
 <meta name="robots" content="noindex">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Касса Full House</title>
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Golos+Text:wght@400;500;600&family=Fredoka:wght@600&display=swap">
@@ -266,6 +266,8 @@ button.chip:active{transform:scale(.94)}
 .ord footer b{font:600 19px/1 var(--f-display);font-variant-numeric:tabular-nums}
 .sm{padding:10px 18px;border-radius:99px;background:var(--grad);color:#fff;font:600 13px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;box-shadow:0 0 14px rgba(var(--violet-a),.6);transition:transform .15s}
 .sm:active{transform:scale(.93)}
+.sm.alt{background:rgba(8,7,13,.6);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .served{font:500 11px/1 var(--f-display);letter-spacing:.16em;text-transform:uppercase}
 
 /* ───── tab bar ───── */
@@ -324,10 +326,9 @@ button.chip:active{transform:scale(.94)}
   .puff{display:none}}
 @media (min-width:560px){.app{border-inline:1px solid var(--line)}}
 </style>
-
-<canvas id="fog" aria-hidden="true"></canvas>
 </head>
 <body>
+<canvas id="fog" aria-hidden="true"></canvas>
 <div class="app" id="app">
   <header class="top">
     <div class="top-in gut">
@@ -372,62 +373,12 @@ button.chip:active{transform:scale(.94)}
    1. КАТАЛОГ. Всё, что меняется под заведение, лежит здесь.
       Цены, остатки и состав — примеры для демо, замените на свои.
    ════════════════════════════════════════════════════════════════════ */
-const CUR = 'сум';
-/* Снеки и сеты: позиции и цены из печатного меню клуба (в меню цены указаны в тысячах сум).
-   Кабинки, кальяны, напитки и все остатки пока примерные. */
-const CABINS = [
-  {n:1, gen:'PS5', vip:true,  price:50000, tv:'65″ 4K', pads:4, games:['EA FC 26','Mortal Kombat 1','UFC 5','GTA V']},
-  {n:2, gen:'PS5', vip:false, price:40000, tv:'55″ 4K', pads:2, games:['EA FC 26','Mortal Kombat 1','UFC 5','GTA V']},
-  {n:3, gen:'PS4', vip:false, price:25000, tv:'50″',    pads:2, games:['FIFA 23','Mortal Kombat 11','Tekken 7','GTA V']},
-  {n:4, gen:'PS4', vip:false, price:25000, tv:'50″',    pads:2, games:['FIFA 23','Mortal Kombat 11','Tekken 7','GTA V']},
-  {n:5, gen:'PS4', vip:false, price:25000, tv:'43″',    pads:2, games:['FIFA 23','Mortal Kombat 11','UFC 4','GTA V']},
-  {n:6, gen:'PS4', vip:false, price:25000, tv:'43″',    pads:2, games:['FIFA 23','Mortal Kombat 11','UFC 4','GTA V']},
-  {n:7, gen:'PS3', vip:false, price:15000, tv:'40″',    pads:2, games:['PES 2013','Mortal Kombat 9','Tekken Tag 2','GTA V']},
-  {n:8, gen:'PS3', vip:false, price:15000, tv:'40″',    pads:2, games:['PES 2013','Mortal Kombat 9','Tekken Tag 2','GTA V']},
-];
-const HOOKAH_TOTAL = 6;
-const HOOKAHS = [
-  {id:'h1', name:'Классический',    desc:'Глиняная чаша, один вкус или микс',   price:80000,  str:2},
-  {id:'h2', name:'На грейпфруте',   desc:'Фруктовая чаша, свежий и кислый',      price:110000, str:2},
-  {id:'h3', name:'На ананасе',      desc:'Большая фруктовая чаша на компанию',   price:140000, str:1},
-  {id:'h4', name:'Premium',         desc:'Тёмные табаки, плотный дым',           price:130000, str:3},
-  {id:'h5', name:'Безникотиновый',  desc:'Чайная смесь, вкус на выбор',          price:80000,  str:0},
-];
+/* Меню лежит в catalog.json: его читают и эта страница, и сервер. Сборка (build.py) подставляет его сюда. */
+const CATALOG = {"currency":"сум","cabins":[{"n":1,"gen":"PS5","vip":true,"price":50000,"tv":"65″ 4K","pads":4,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},{"n":2,"gen":"PS5","vip":false,"price":40000,"tv":"55″ 4K","pads":2,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},{"n":3,"gen":"PS4","vip":false,"price":25000,"tv":"50″","pads":2,"games":["FIFA 23","Mortal Kombat 11","Tekken 7","GTA V"]},{"n":4,"gen":"PS4","vip":false,"price":25000,"tv":"50″","pads":2,"games":["FIFA 23","Mortal Kombat 11","Tekken 7","GTA V"]},{"n":5,"gen":"PS4","vip":false,"price":25000,"tv":"43″","pads":2,"games":["FIFA 23","Mortal Kombat 11","UFC 4","GTA V"]},{"n":6,"gen":"PS4","vip":false,"price":25000,"tv":"43″","pads":2,"games":["FIFA 23","Mortal Kombat 11","UFC 4","GTA V"]},{"n":7,"gen":"PS3","vip":false,"price":15000,"tv":"40″","pads":2,"games":["PES 2013","Mortal Kombat 9","Tekken Tag 2","GTA V"]},{"n":8,"gen":"PS3","vip":false,"price":15000,"tv":"40″","pads":2,"games":["PES 2013","Mortal Kombat 9","Tekken Tag 2","GTA V"]}],"hookahTotal":6,"hookahs":[{"id":"h1","name":"Классический","desc":"Глиняная чаша, один вкус или микс","price":80000,"str":2},{"id":"h2","name":"На грейпфруте","desc":"Фруктовая чаша, свежий и кислый","price":110000,"str":2},{"id":"h3","name":"На ананасе","desc":"Большая фруктовая чаша на компанию","price":140000,"str":1},{"id":"h4","name":"Premium","desc":"Тёмные табаки, плотный дым","price":130000,"str":3},{"id":"h5","name":"Безникотиновый","desc":"Чайная смесь, вкус на выбор","price":80000,"str":0}],"tobacco":["MustHave","Spectrum","Северный"],"flavors":["Двойное яблоко","Мята","Арбуз","Дыня","Черника","Виноград","Персик","Манго","Лимон-лайм","Вишня"],"drinks":[{"id":"d1","cat":"Газировка","name":"Coca-Cola","unit":["0,5","л"],"price":12000,"stock":24,"cap":30},{"id":"d2","cat":"Газировка","name":"Fanta","unit":["0,5","л"],"price":12000,"stock":11,"cap":30},{"id":"d3","cat":"Газировка","name":"Sprite","unit":["0,5","л"],"price":12000,"stock":3,"cap":30},{"id":"d4","cat":"Газировка","name":"Coca-Cola","unit":["1","л"],"price":18000,"stock":8,"cap":12},{"id":"d5","cat":"Энергетики","name":"Red Bull","unit":["0,25","л"],"price":30000,"stock":9,"cap":24},{"id":"d6","cat":"Энергетики","name":"Adrenaline Rush","unit":["0,45","л"],"price":22000,"stock":0,"cap":24},{"id":"d7","cat":"Энергетики","name":"Burn","unit":["0,45","л"],"price":20000,"stock":6,"cap":24},{"id":"d8","cat":"Вода и соки","name":"Вода без газа","unit":["0,5","л"],"price":5000,"stock":40,"cap":48},{"id":"d9","cat":"Вода и соки","name":"Вода с газом","unit":["0,5","л"],"price":5000,"stock":17,"cap":48},{"id":"d10","cat":"Вода и соки","name":"Сок яблочный","unit":["0,33","л"],"price":10000,"stock":5,"cap":20},{"id":"d11","cat":"Вода и соки","name":"Холодный чай","unit":["0,5","л"],"price":12000,"stock":2,"cap":20},{"id":"d12","cat":"Горячее","name":"Чай чёрный","unit":["0,8","л"],"price":20000,"stock":null},{"id":"d13","cat":"Горячее","name":"Чай зелёный","unit":["0,8","л"],"price":20000,"stock":null},{"id":"d14","cat":"Горячее","name":"Американо","unit":["200","мл"],"price":15000,"stock":null}],"snacks":[{"id":"s1","cat":"Сеты","name":"Сет 1","desc":"Курт, сырные палочки, сушки, кешью","price":100000,"stock":null},{"id":"s2","cat":"Сеты","name":"Сет 2","desc":"Курт, сырные палочки, чипсы, кешью, семечки","price":125000,"stock":null},{"id":"s3","cat":"Сеты","name":"Сет 3","desc":"Чипсы, курт, семечки","price":75000,"stock":null},{"id":"s4","cat":"Снеки","name":"Чипсы Lays","price":20000,"stock":12,"cap":20},{"id":"s5","cat":"Снеки","name":"Чипсы Pringles","price":40000,"stock":6,"cap":12},{"id":"s6","cat":"Снеки","name":"Курт Ermak","price":15000,"stock":9,"cap":20},{"id":"s7","cat":"Снеки","name":"Курт","price":15000,"stock":14,"cap":20},{"id":"s8","cat":"Снеки","name":"Сырные палочки","price":20000,"stock":4,"cap":15},{"id":"s9","cat":"Снеки","name":"Кешью","price":20000,"stock":7,"cap":15},{"id":"s10","cat":"Снеки","name":"Сушки","price":15000,"stock":10,"cap":15},{"id":"s11","cat":"Снеки","name":"Семечки","unit":["150","гр"],"price":25000,"stock":8,"cap":20},{"id":"s12","cat":"Снеки","name":"Семечки","unit":["100","гр"],"price":20000,"stock":2,"cap":20},{"id":"s13","cat":"Снеки","name":"Кириешки","price":15000,"stock":18,"cap":30},{"id":"s14","cat":"Снеки","name":"Гренки","price":15000,"stock":0,"cap":15}]};
+const API = "https://fullhouse-bot.the-last-city.workers.dev";                       // адрес сервера клуба; пусто = демо без сервера
+const CUR = CATALOG.currency, CABINS = CATALOG.cabins, HOOKAH_TOTAL = CATALOG.hookahTotal, HOOKAHS = CATALOG.hookahs,
+      TOBACCO = CATALOG.tobacco, FLAVORS = CATALOG.flavors, DRINKS = CATALOG.drinks, SNACKS = CATALOG.snacks;
 const STRENGTH = ['Без никотина','Лёгкий','Средний','Крепкий'];
-const TOBACCO = ['MustHave','Spectrum','Северный'];                 // бренды с витрины клуба
-const FLAVORS = ['Двойное яблоко','Мята','Арбуз','Дыня','Черника','Виноград','Персик','Манго','Лимон-лайм','Вишня'];
-const DRINKS = [
-  {id:'d1',  cat:'Газировка',   name:'Coca-Cola',        unit:['0,5','л'],   price:12000, stock:24, cap:30},
-  {id:'d2',  cat:'Газировка',   name:'Fanta',            unit:['0,5','л'],   price:12000, stock:11, cap:30},
-  {id:'d3',  cat:'Газировка',   name:'Sprite',           unit:['0,5','л'],   price:12000, stock:3,  cap:30},
-  {id:'d4',  cat:'Газировка',   name:'Coca-Cola',        unit:['1','л'],     price:18000, stock:8,  cap:12},
-  {id:'d5',  cat:'Энергетики',  name:'Red Bull',         unit:['0,25','л'],  price:30000, stock:9,  cap:24},
-  {id:'d6',  cat:'Энергетики',  name:'Adrenaline Rush',  unit:['0,45','л'],  price:22000, stock:0,  cap:24},
-  {id:'d7',  cat:'Энергетики',  name:'Burn',             unit:['0,45','л'],  price:20000, stock:6,  cap:24},
-  {id:'d8',  cat:'Вода и соки', name:'Вода без газа',    unit:['0,5','л'],   price:5000,  stock:40, cap:48},
-  {id:'d9',  cat:'Вода и соки', name:'Вода с газом',     unit:['0,5','л'],   price:5000,  stock:17, cap:48},
-  {id:'d10', cat:'Вода и соки', name:'Сок яблочный',     unit:['0,33','л'],  price:10000, stock:5,  cap:20},
-  {id:'d11', cat:'Вода и соки', name:'Холодный чай',     unit:['0,5','л'],   price:12000, stock:2,  cap:20},
-  {id:'d12', cat:'Горячее',     name:'Чай чёрный',       unit:['0,8','л'],   price:20000, stock:null},
-  {id:'d13', cat:'Горячее',     name:'Чай зелёный',      unit:['0,8','л'],   price:20000, stock:null},
-  {id:'d14', cat:'Горячее',     name:'Американо',        unit:['200','мл'],  price:15000, stock:null},
-];
-const SNACKS = [
-  {id:'s1',  cat:'Сеты',  name:'Сет 1', desc:'Курт, сырные палочки, сушки, кешью',           price:100000, stock:null},
-  {id:'s2',  cat:'Сеты',  name:'Сет 2', desc:'Курт, сырные палочки, чипсы, кешью, семечки',  price:125000, stock:null},
-  {id:'s3',  cat:'Сеты',  name:'Сет 3', desc:'Чипсы, курт, семечки',                         price:75000,  stock:null},
-  {id:'s4',  cat:'Снеки', name:'Чипсы Lays',                         price:20000, stock:12, cap:20},
-  {id:'s5',  cat:'Снеки', name:'Чипсы Pringles',                     price:40000, stock:6,  cap:12},
-  {id:'s6',  cat:'Снеки', name:'Курт Ermak',                         price:15000, stock:9,  cap:20},
-  {id:'s7',  cat:'Снеки', name:'Курт',                               price:15000, stock:14, cap:20},
-  {id:'s8',  cat:'Снеки', name:'Сырные палочки',                     price:20000, stock:4,  cap:15},
-  {id:'s9',  cat:'Снеки', name:'Кешью',                              price:20000, stock:7,  cap:15},
-  {id:'s10', cat:'Снеки', name:'Сушки',                              price:15000, stock:10, cap:15},
-  {id:'s11', cat:'Снеки', name:'Семечки',      unit:['150','гр'],    price:25000, stock:8,  cap:20},
-  {id:'s12', cat:'Снеки', name:'Семечки',      unit:['100','гр'],    price:20000, stock:2,  cap:20},
-  {id:'s13', cat:'Снеки', name:'Кириешки',                           price:15000, stock:18, cap:30},
-  {id:'s14', cat:'Снеки', name:'Гренки',                             price:15000, stock:0,  cap:15},
-];
 const ITEMS = {};
 HOOKAHS.forEach(x => ITEMS[x.id] = {...x, type:'hookah'});
 DRINKS.forEach(x => ITEMS[x.id] = {...x, type:'drinks'});
@@ -470,6 +421,11 @@ function load() {
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
 let state = load();
+/* Живой режим: после первого ответа сервера остатки, кабинки и заказы общие для всех телефонов.
+   Если сервер не ответил, страница работает как демо на данных из браузера. */
+let live = false, skew = 0, mutSeq = 0, lastSig = '';
+const me = {admin:false, user:false};
+const now = () => Date.now() + skew;
 const ui = {tab:'cabins', mode:'guest', dir:1, cabFilter:'all', cat:{drinks:'all', snacks:'all'}, done:null, sheet:null};
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -494,12 +450,13 @@ if (inTg) { try {
    ════════════════════════════════════════════════════════════════════ */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = v => String(v).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 const group = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
 const money = n => group(n) + ' ' + CUR;
 const hhmm = t => { const d = new Date(t); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); };
-const dur = t => { const m = Math.max(1, Math.round((t - Date.now())/MIN)); return m < 60 ? m + ' мин' : Math.floor(m/60) + ' ч' + (m%60 ? ' ' + (m%60) + ' мин' : ''); };
+const dur = t => { const m = Math.max(1, Math.round((t - now())/MIN)); return m < 60 ? m + ' мин' : Math.floor(m/60) + ' ч' + (m%60 ? ' ' + (m%60) + ' мин' : ''); };
 const hoursWord = h => h + (h === 1 ? ' час' : h < 5 ? ' часа' : ' часов');
-const busy = n => (state.busy[n] && state.busy[n] > Date.now()) ? state.busy[n] : 0;
+const busy = n => (state.busy[n] && state.busy[n] > now()) ? state.busy[n] : 0;
 const freeCabs = () => CABINS.filter(c => !busy(c.n)).length;
 const stockOf = id => ITEMS[id].type === 'hookah' ? state.hookahFree : state.stock[id];
 const cartQ = id => state.cart.items[id] || 0;
@@ -623,7 +580,7 @@ function qtyHTML(id, q, max, cls) {
 function rowHTML(it, i) {
   const admin = ui.mode === 'admin', st = stockOf(it.id);
   let ctl = '';
-  if (admin) ctl = (it.type !== 'hookah' && st !== null) ? qtyHTML(it.id, st, 99, ' adm') : '';
+  if (admin) ctl = (it.type !== 'hookah' && st !== null) ? qtyHTML(it.id, st, 999, ' adm') : '';
   else ctl = qtyHTML(it.id, cartQ(it.id), maxFor(it.id));
   return '<article class="row' + (st === 0 ? ' out' : '') + '" data-id="' + it.id + '" style="--i:' + i + '">' +
     '<div class="rl"><h3>' + it.name + (it.unit ? ' <small>' + unitOf(it) + '</small>' : '') + '</h3><i class="dots" aria-hidden="true"></i><span class="price">' + money(it.price) + '</span></div>' +
@@ -642,7 +599,7 @@ function patchRows(d) {
     const q = $('.qty', row); if (!q) return;
     const val = admin ? st : cartQ(it.id), n = $('.n', q);
     if (+q.dataset.q !== val) { q.dataset.q = val; roll(n, val, d || 1); }
-    $('.plus', q).disabled = admin ? val >= 99 : val >= maxFor(it.id);
+    $('.plus', q).disabled = admin ? val >= 999 : val >= maxFor(it.id);
   });
 }
 
@@ -708,25 +665,27 @@ function viewOrderGuest() {
   return head('Ваш заказ', total, 'к оплате', '', true) + '<div class="board" id="lines">' + L.map(lineHTML).join('') + '</div>' +
     '<div class="picker" style="--i:' + (n+1) + '"><h4>Куда принести</h4><div class="chips" id="places">' + places + '</div>' +
     '<p class="note">По QR-коду на столе место подставится само.</p></div>' +
-    '<div class="picker" style="--i:' + (n+2) + '"><h4>Оплата</h4><div class="chips wrap" id="pays">' + pays + '</div></div>' +
+    (live ? '' : '<div class="picker" style="--i:' + (n+2) + '"><h4>Оплата</h4><div class="chips wrap" id="pays">' + pays + '</div></div>') +
     '<div class="stack" style="--i:' + (n+3) + '"><button type="button" class="btn" id="pay" data-act="pay"><span id="pay-label">' + payLabel(total) + '</span></button>' +
-    '<p class="fine">Демо-режим: деньги не списываются.</p></div>';
+    '<p class="fine">' + (!live ? 'Демо-режим: деньги не списываются.' : me.user ? 'Оплата на кассе при получении. Заказ сразу придёт администратору.' : 'Заказ оформляется в Telegram: откройте меню через бота клуба.') + '</p></div>';
 }
 const payLabel = t => (state.pay === 'card' ? 'Оплатить ' : 'Оформить ') + money(t);
 
 /* — Заказы (касса) — */
 function ordHTML(o, i) {
-  return '<article class="ord' + (o.status === 'done' ? ' done-o' : '') + '" data-no="' + o.no + '" style="--i:' + i + '">' +
-    '<header><b>№' + o.no + '</b><span>' + hhmm(o.t) + ' · ' + placeName(o.place) + ' · ' + (o.pay === 'card' ? 'картой' : 'наличные') + '</span>' + (o.ex ? '<em class="tag">пример</em>' : '') + '</header>' +
+  const closed = o.status !== 'new';
+  return '<article class="ord' + (closed ? ' done-o' : '') + '" data-no="' + o.no + '" style="--i:' + i + '">' +
+    '<header><b>№' + o.no + '</b><span>' + hhmm(o.t) + ' · ' + placeName(o.place) + ' · ' + (o.pay === 'card' ? 'картой' : 'на кассе') + (o.by ? ' · ' + esc(o.by.name) : '') + '</span>' + (o.ex ? '<em class="tag">пример</em>' : '') + '</header>' +
     '<ul>' + o.lines.map(l => '<li><span>' + l[0] + (l[1] > 1 ? ' × ' + l[1] : '') + '</span><span>' + money(l[2]) + '</span></li>').join('') + '</ul>' +
-    '<footer><b>' + money(o.total) + '</b>' + (o.status === 'new' ? '<button type="button" class="sm" data-act="serve" data-no="' + o.no + '">Выдать</button>' : '<span class="served">Выдан</span>') + '</footer></article>';
+    '<footer><b>' + money(o.total) + '</b>' + (closed ? '<span class="served">' + (o.status === 'cancelled' ? 'Отменён' : 'Выдан') + '</span>'
+      : '<span class="acts"><button type="button" class="sm alt" data-act="cancel" data-no="' + o.no + '">Отменить</button><button type="button" class="sm" data-act="serve" data-no="' + o.no + '">Выдать</button></span>') + '</footer></article>';
 }
 function viewOrderAdmin() {
-  const newN = state.orders.filter(o => o.status === 'new').length, rev = state.orders.reduce((s, o) => s + o.total, 0);
+  const newN = state.orders.filter(o => o.status === 'new').length, rev = state.orders.reduce((s, o) => s + (o.status === 'cancelled' ? 0 : o.total), 0);
   return head('Заказы смены', newN, newN === 1 ? 'ждёт выдачи' : 'ждут выдачи',
     '<p class="note">Выручка смены: <b class="num">' + money(rev) + '</b> · заказов: ' + state.orders.length + '</p>') +
-    state.orders.map(ordHTML).join('') +
-    '<div class="stack" style="--i:' + (state.orders.length + 1) + '"><button type="button" class="btn quiet" data-act="reset">Сбросить демо к началу</button></div>';
+    (state.orders.length ? state.orders.map(ordHTML).join('') : '<p class="note tail">Заказов пока нет. Новый заказ появится здесь и придёт вам сообщением от бота.</p>') +
+    '<div class="stack" style="--i:' + (state.orders.length + 1) + '"><button type="button" class="btn quiet" data-act="reset">' + (live ? 'Закрыть смену и очистить заказы' : 'Сбросить демо к началу') + '</button></div>';
 }
 
 const VIEWS = {
@@ -765,7 +724,7 @@ function sheetHTML() {
   let s = '<h2>Кабинка №' + n + '</h2><p class="state">' + (b ? 'Занята до ' + hhmm(b) + ' · ещё ' + dur(b) : 'Свободна · ' + money(c.price) + ' в час') + '</p>' + specs;
   if (admin) s += b
     ? '<div class="stack"><button type="button" class="btn" data-act="extend">Продлить на 30 минут</button><button type="button" class="btn ghost" data-act="release">Освободить кабинку</button></div>'
-    : hrs + '<div class="stack"><button type="button" class="btn" data-act="occupy">Занять до ' + hhmm(Date.now() + h*HOUR) + '</button></div>';
+    : hrs + '<div class="stack"><button type="button" class="btn" data-act="occupy">Занять до ' + hhmm(now() + h*HOUR) + '</button></div>';
   else s += b
     ? '<div class="stack"><button type="button" class="btn ghost" data-act="close">Понятно</button></div>'
     : hrs + '<div class="stack"><button type="button" class="btn" data-act="book">' + (inCart ? 'Обновить заказ · ' : 'Добавить в заказ · ') + money(c.price*h) + '</button>' +
@@ -778,7 +737,7 @@ function openSheet(n) {
   document.body.classList.add('sheet-open');
   const f = $('#sheet .btn'); if (f) setTimeout(() => f.focus({preventScroll:true}), 60);
 }
-function closeSheet() { document.body.classList.remove('sheet-open'); ui.sheet = null; }
+function closeSheet() { const was = ui.sheet; document.body.classList.remove('sheet-open'); ui.sheet = null; if (was && live && ui.tab === 'cabins') refreshCabs(); }
 
 /* ════════════════════════════════════════════════════════════════════
    6. ДЕЙСТВИЯ
@@ -788,7 +747,7 @@ function go(tab, force) {
   if (tab === ui.tab && !force) return;
   ui.dir = TABS.indexOf(tab) >= TABS.indexOf(ui.tab) ? 1 : -1;
   if (ui.tab === 'order') ui.done = null;
-  ui.tab = tab; render(true); window.scrollTo(0, 0);
+  ui.tab = tab; render(true); window.scrollTo(0, 0); if (live) sync();
   try { if (location.hash.slice(1) !== tab) history.replaceState(null, '', '#' + tab); } catch (e) { try { location.hash = tab; } catch (e2) {} }
 }
 function patchOrder(id, d) {
@@ -799,9 +758,64 @@ function patchOrder(id, d) {
   $$('.line[data-id^="h"]').forEach(r => { $('.plus', r).disabled = cartQ(r.dataset.id) >= maxFor(r.dataset.id); });
   const t = cartTotal(); setBig(t); $('#pay-label').textContent = payLabel(t);
 }
+/* Двойное нажатие для необратимых действий: первое меняет надпись, второе выполняет. */
+function sure(el, label) {
+  if (el.dataset.sure) return true;
+  const was = el.textContent; el.dataset.sure = '1'; el.textContent = label;
+  setTimeout(() => { if (el.isConnected) { delete el.dataset.sure; el.textContent = was; } }, 3000);
+  return false;
+}
+async function call(path, body) {
+  let r, j = null;
+  try { r = await fetch(API + path, {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(Object.assign({initData: inTg ? tg.initData : ''}, body))}); j = await r.json(); } catch (e) {}
+  if (!r || !j || typeof j !== 'object') throw new Error('Нет связи с клубом. Попробуйте ещё раз.');
+  if (!r.ok) throw new Error(j.error || 'Нет связи с клубом. Попробуйте ещё раз.');
+  return j;
+}
+const sigOf = j => JSON.stringify([j.busy, j.hookahFree, j.flavorsOff, j.stock, j.orders, j.admin]);
+function applyServer(j) {
+  skew = j.now - Date.now();
+  state.busy = j.busy; state.hookahFree = j.hookahFree; state.flavorsOff = j.flavorsOff; state.stock = j.stock; state.orders = j.orders || [];
+  me.admin = !!j.admin; me.user = !!j.user;
+  for (const id of Object.keys(state.cart.items)) {               // корзина не обещает больше, чем есть
+    if (!ITEMS[id]) { delete state.cart.items[id]; continue; }
+    const m = maxFor(id); if (state.cart.items[id] > m) { if (m > 0) state.cart.items[id] = m; else delete state.cart.items[id]; } }
+  for (const n of Object.keys(state.cart.cabins)) if (busy(n)) delete state.cart.cabins[n];
+  save();
+}
+function access() {                                                // переключатель «Касса» видят только сотрудники
+  if (!live) return;
+  $('.mode').hidden = !me.admin;
+  if (!me.admin && ui.mode === 'admin') { ui.mode = 'guest'; closeSheet(); render(false); }
+}
+function soft() {                                                  // тихо обновить экран после изменений на сервере
+  access();
+  if (ui.sheet || ui.paying) { chrome(); return; }
+  if (ui.tab === 'cabins') refreshCabs();
+  else if (ui.tab === 'drinks' || ui.tab === 'snacks') { patchRows(); setBig(shelfUnits(ui.tab)); }
+  else if (ui.tab === 'hookah' || !ui.done) render(false);
+  chrome();
+}
+async function sync() {
+  if (!API) return false;
+  const seq = mutSeq;
+  let j; try { j = await call('/api/sync', {}); } catch (e) { return false; }
+  if (seq !== mutSeq) return true;                                 // пока шёл запрос, мы сами что-то изменили: ответ устарел
+  const sig = sigOf(j), first = !live;
+  live = true; applyServer(j);
+  if (first) { state.pay = 'cash'; ui.done = null; access(); render(true); }
+  else if (sig !== lastSig) soft();
+  lastSig = sig; return true;
+}
+function push(action, payload) {                                   // действие кассы: экран уже обновлён, сервер подтверждает
+  if (!live) return;
+  const seq = ++mutSeq;
+  call('/api/admin', {action, payload}).then(j => { if (seq !== mutSeq) return; applyServer(j); lastSig = sigOf(j); chrome(); })
+    .catch(e => { toast(e.message); ++mutSeq; lastSig = ''; sync(); });
+}
 const ACT = {
   go: el => go(el.dataset.tab),
-  mode: el => { if (ui.mode === el.dataset.mode) return; ui.mode = el.dataset.mode; ui.done = null; closeSheet(); ui.dir = 1; render(true);
+  mode: el => { if (ui.mode === el.dataset.mode || (live && !me.admin)) return; ui.mode = el.dataset.mode; ui.done = null; closeSheet(); ui.dir = 1; render(true);
     toast(ui.mode === 'admin' ? 'Вы в режиме кассы' : 'Так меню видит гость'); },
   cabf: el => { ui.cabFilter = el.dataset.g; $$('#cab-chips .chip').forEach(c => c.classList.toggle('on', c === el)); refreshCabs(0, true); },
   cat: el => { ui.cat[ui.tab] = el.dataset.c; ui.dir = 1; render(false); const s = $('#shelf'); $('#view').classList.add('anim'); void s.offsetWidth; },
@@ -814,9 +828,9 @@ const ACT = {
     setTimeout(() => { if (isNew) fly($('.cab[data-n="' + n + '"] .pill')); else bump(); }, 320);
     toast('Кабинка №' + n + ' в заказе на ' + hoursWord(state.cart.cabins[n])); },
   unbook: () => { const n = ui.sheet.n; delete state.cart.cabins[n]; if (state.place === String(n)) state.place = 'hall'; save(); closeSheet(); refreshCabs(n); chrome(); },
-  occupy: () => { const n = ui.sheet.n; state.busy[n] = Date.now() + ui.sheet.h*HOUR; delete state.cart.cabins[n]; save(); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' занята до ' + hhmm(state.busy[n])); },
-  release: () => { const n = ui.sheet.n; delete state.busy[n]; save(); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' свободна'); },
-  extend: () => { const n = ui.sheet.n; state.busy[n] = busy(n) + 30*MIN; save(); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' продлена до ' + hhmm(state.busy[n])); },
+  occupy: () => { const n = ui.sheet.n, h = ui.sheet.h; state.busy[n] = now() + h*HOUR; delete state.cart.cabins[n]; save(); push('occupy', {n, h}); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' занята до ' + hhmm(state.busy[n])); },
+  release: () => { const n = ui.sheet.n; delete state.busy[n]; save(); push('release', {n}); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' свободна'); },
+  extend: () => { const n = ui.sheet.n; state.busy[n] = busy(n) + 30*MIN; save(); push('extend', {n}); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' продлена до ' + hhmm(state.busy[n])); },
   chg: el => {
     const id = el.dataset.id, d = +el.dataset.d;
     if (id.startsWith('cab:')) {                                   // часы кабинки в заказе
@@ -825,7 +839,7 @@ const ACT = {
       save(); chrome(); patchOrder(id, d); return;
     }
     if (ui.mode === 'admin') {                                     // касса правит остаток
-      state.stock[id] = Math.max(0, Math.min(99, state.stock[id] + d)); save(); patchRows(d);
+      state.stock[id] = Math.max(0, Math.min(999, state.stock[id] + d)); save(); push('stock', {id, d}); patchRows(d);
       setBig(shelfUnits(ITEMS[id].type)); return;
     }
     const q = cartQ(id), nq = Math.max(0, Math.min(maxFor(id), q + d));
@@ -835,30 +849,48 @@ const ACT = {
     if (ui.tab === 'order') patchOrder(id, d); else { patchRows(d); if (d > 0) fly(el); }
   },
   hk: el => { const d = +el.dataset.d, v = Math.max(0, Math.min(HOOKAH_TOTAL, state.hookahFree + d)); if (v === state.hookahFree) return;
-    state.hookahFree = v; save(); roll($('#hk-n'), v, d); $('#hk-n').parentNode.dataset.q = v; $('#pips').innerHTML = pipsHTML(); setBig(v); },
+    state.hookahFree = v; save(); push('hookah', {d}); roll($('#hk-n'), v, d); $('#hk-n').parentNode.dataset.q = v; $('#pips').innerHTML = pipsHTML(); setBig(v); },
   flav: el => { const f = el.dataset.f, i = state.flavorsOff.indexOf(f); if (i >= 0) state.flavorsOff.splice(i, 1); else state.flavorsOff.push(f);
-    save(); el.classList.toggle('off', i < 0); el.setAttribute('aria-pressed', i >= 0); },
+    save(); push('flavor', {f}); el.classList.toggle('off', i < 0); el.setAttribute('aria-pressed', i >= 0); },
   place: el => { state.place = el.dataset.p; save(); $$('#places .chip').forEach(c => c.classList.toggle('on', c === el)); },
   payby: el => { state.pay = el.dataset.p; save(); $$('#pays .chip').forEach(c => c.classList.toggle('on', c === el)); $('#pay-label').textContent = payLabel(cartTotal()); },
   pay: el => {
     el.classList.add('busy'); el.disabled = true; $('#pay-label').textContent = state.pay === 'card' ? 'Проводим оплату…' : 'Оформляем…';
+    if (live) {                                                    // заказ уходит на сервер и администратору в Telegram
+      ui.paying = true; ++mutSeq;
+      call('/api/order', {items: state.cart.items, cabins: state.cart.cabins, place: state.place}).then(j => {
+        state.cart = {items:{}, cabins:{}}; applyServer(j.state); lastSig = sigOf(j.state); ui.paying = false;
+        ui.done = j.order; ui.dir = 1; render(true); window.scrollTo(0, 0); haptic('success');
+      }).catch(e => { ui.paying = false; toast(e.message); ++mutSeq; lastSig = ''; sync().then(() => { if (ui.tab === 'order' && !ui.done) render(false); }); });
+      return;
+    }
     setTimeout(() => {
-      const L = cartLines(), now = Date.now();
+      const L = cartLines(), now = Date.now(), raw = {items: {...state.cart.items}, cabins: {}};
       Object.keys(state.cart.items).forEach(id => { const q = state.cart.items[id], it = ITEMS[id];
         if (it.type === 'hookah') state.hookahFree = Math.max(0, state.hookahFree - q);
         else if (state.stock[id] !== null) state.stock[id] = Math.max(0, state.stock[id] - q); });
-      Object.keys(state.cart.cabins).forEach(n => state.busy[n] = now + state.cart.cabins[n]*HOUR);
-      const o = {no: state.nextNo++, t: now, place: state.place, pay: state.pay, status:'new', total: L.reduce((s, l) => s + l.sum, 0),
+      Object.keys(state.cart.cabins).forEach(n => { state.busy[n] = now + state.cart.cabins[n]*HOUR; raw.cabins[n] = state.busy[n]; });
+      const o = {no: state.nextNo++, t: now, place: state.place, pay: state.pay, status:'new', raw, total: L.reduce((s, l) => s + l.sum, 0),
         lines: L.map(l => [l.id.startsWith('cab:') ? l.name + ', ' + hoursWord(l.qty) : fullName(ITEMS[l.id]), l.id.startsWith('cab:') ? 1 : l.qty, l.sum])};
       state.orders.unshift(o); state.cart = {items:{}, cabins:{}}; save();
       ui.done = o; ui.dir = 1; render(true); window.scrollTo(0, 0); haptic('success');
     }, reduce ? 150 : 1150);
   },
   again: () => { ui.done = null; go('cabins', true); },
-  serve: el => { const o = state.orders.find(x => x.no === +el.dataset.no); if (!o) return; o.status = 'done'; save();
-    const card = el.closest('.ord'); card.classList.add('done-o'); el.outerHTML = '<span class="served">Выдан</span>';
+  serve: el => { const o = state.orders.find(x => x.no === +el.dataset.no); if (!o) return; o.status = 'done'; save(); push('serve', {no: o.no});
+    const card = el.closest('.ord'); card.classList.add('done-o'); el.closest('.acts').outerHTML = '<span class="served">Выдан</span>';
     setBig(state.orders.filter(x => x.status === 'new').length); chrome(); toast('Заказ №' + o.no + ' выдан'); },
-  reset: () => { state = seed(); save(); ui.done = null; ui.dir = 1; render(true); toast('Демо сброшено'); },
+  cancel: el => { if (!sure(el, 'Точно отменить?')) return;
+    const o = state.orders.find(x => x.no === +el.dataset.no); if (!o || o.status !== 'new') return;
+    if (o.raw) {                                                   // вернуть товар и освободить кабинки
+      for (const id in o.raw.items) { const it = ITEMS[id]; if (!it) continue;
+        if (it.type === 'hookah') state.hookahFree = Math.min(HOOKAH_TOTAL, state.hookahFree + o.raw.items[id]); else if (state.stock[id] !== null) state.stock[id] += o.raw.items[id]; }
+      for (const n in o.raw.cabins) if (state.busy[n] === o.raw.cabins[n]) delete state.busy[n];
+    }
+    o.status = 'cancelled'; save(); push('cancel', {no: o.no}); render(false); toast('Заказ №' + o.no + ' отменён'); },
+  reset: el => {
+    if (live) { if (!sure(el, 'Нажмите ещё раз, чтобы очистить')) return; state.orders = []; save(); push('reset', {}); render(false); toast('Смена закрыта'); return; }
+    state = seed(); save(); ui.done = null; ui.dir = 1; render(true); toast('Демо сброшено'); },
 };
 document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (el && !el.disabled && ACT[el.dataset.act]) ACT[el.dataset.act](el); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ui.sheet) closeSheet(); });
@@ -871,6 +903,7 @@ setInterval(() => { if (ui.tab === 'cabins' && !ui.sheet) refreshCabs(); }, 3000
 if (inTg) {
   const sw = $('.mode'); sw.hidden = true; let taps = 0, tapT;
   $('.brand').addEventListener('click', () => { clearTimeout(tapT); tapT = setTimeout(() => taps = 0, 1500);
+    if (live) return;
     if (++taps >= 5 && sw.hidden) { sw.hidden = false; haptic('success'); toast('Режим кассы открыт'); } });
 }
 /* Дым на фоне: красный справа, синий слева. Рисуется в маленький холст и растягивается, поэтому дёшев для телефона. */
@@ -899,7 +932,12 @@ if (inTg) {
 })();
 const start = location.hash.slice(1);
 if (TABS.includes(start)) ui.tab = start;
-render(true);
+if (API) {
+  $('#view').innerHTML = '<div class="vh"><p class="eyebrow">Загружаем меню…</p></div>'; chrome();
+  const loop = () => setTimeout(async () => { if (!document.hidden) await sync(); loop(); }, live && me.admin ? 6000 : 15000);
+  Promise.race([sync(), new Promise(r => setTimeout(() => r(false), 7000))]).then(ok => { if (!ok && !live) render(true); loop(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
+} else render(true);
 })();
 </script>
 </body>
