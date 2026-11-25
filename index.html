@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="robots" content="noindex">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Касса Full House</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one phone-width column. Sticky brand bar with a Guest/Cashier switch, one headline number
+   per tab, then cards or rows, and a fixed five-slot tab bar. Cabins are dealt like playing cards.
+   Strictly monochrome: state is carried by fill, outline and hatching, never by hue. */
+:root{
+  --bg:#ffffff; --surface:#f2f2f0; --raise:#ffffff; --line:#dbdbd8; --fg:#0b0b0b; --muted:#696966;
+  --ink:#0b0b0b; --on-ink:#ffffff; --hatch:rgba(11,11,11,.075); --scrim:rgba(0,0,0,.45);
+  --f-display:'Unbounded','Arial Black',system-ui,sans-serif;
+  --f-body:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.56,.64,1);
+  --gl:max(16px,env(safe-area-inset-left,0px)); --gr:max(16px,env(safe-area-inset-right,0px));
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0a0a; --surface:#171717; --raise:#121212; --line:#2c2c2b; --fg:#f4f4f1; --muted:#8f8f8b;
+  --ink:#f4f4f1; --on-ink:#0a0a0a; --hatch:rgba(255,255,255,.075); --scrim:rgba(0,0,0,.68); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0a0a0a; --surface:#171717; --raise:#121212; --line:#2c2c2b; --fg:#f4f4f1; --muted:#8f8f8b;
+  --ink:#f4f4f1; --on-ink:#0a0a0a; --hatch:rgba(255,255,255,.075); --scrim:rgba(0,0,0,.68); color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font:400 15px/1.4 var(--f-body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:25;background:var(--bg)}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent;text-align:inherit}
+h1,h2,h3,p,ul,dl,dd{margin:0;padding:0}
+ul{list-style:none}
+:focus-visible{outline:2px solid var(--fg);outline-offset:3px;border-radius:6px}
+.app{max-width:520px;margin:0 auto;min-height:100%;position:relative}
+.gut{padding-left:var(--gl);padding-right:var(--gr)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* ───── brand bar ───── */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{display:flex;align-items:flex-end;height:22px;padding-left:4px}
+.logo i{width:11px;height:16px;border-radius:3px;background:var(--ink);border:1px solid var(--bg);margin-left:-4px;
+  transform-origin:50% 160%;transform:rotate(calc((var(--k) - 2)*11deg));
+  animation:logoDeal .6s var(--spring) both;animation-delay:calc(var(--k)*60ms + 80ms)}
+.logo i.o{background:var(--bg);border-color:var(--ink)}
+@keyframes logoDeal{from{opacity:0;transform:rotate(0deg) translateY(-12px)}}
+.word{display:grid;line-height:1}
+.word b{font:800 15px/1 var(--f-display);letter-spacing:.01em;white-space:nowrap}
+.word span{font:500 9px/1 var(--f-mono);letter-spacing:.2em;white-space:nowrap;text-transform:uppercase;color:var(--muted);margin-top:5px}
+.mode{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:3px;border-radius:99px;background:var(--surface);flex:none}
+.mode button{position:relative;z-index:1;padding:7px 13px;font:600 12.5px/1 var(--f-body);color:var(--muted);text-align:center;transition:color .25s}
+.mode button[aria-pressed="true"]{color:var(--on-ink)}
+.mode-thumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:99px;background:var(--ink);transition:transform .4s var(--spring)}
+.is-admin .mode-thumb{transform:translateX(100%)}
+.adm-bar{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s var(--ease);background:var(--ink);color:var(--on-ink)}
+.adm-bar>div{overflow:hidden}
+.adm-bar p{padding-block:8px;font:500 11px/1.3 var(--f-mono);letter-spacing:.04em}
+.is-admin .adm-bar{grid-template-rows:1fr}
+
+/* ───── view head ───── */
+.view{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+.vh{padding-block:22px 6px}
+.eyebrow{font:500 11px/1 var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.big{display:flex;align-items:baseline;gap:12px;margin-top:10px;flex-wrap:wrap}
+.big b{font:800 clamp(50px,16vw,68px)/.9 var(--f-display);letter-spacing:-.035em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.big b[data-money]{font-size:clamp(38px,12vw,54px)}
+.big span{font:500 14px/1.25 var(--f-body);color:var(--muted);max-width:14ch}
+.note{font-size:12.5px;color:var(--muted);margin-top:10px;max-width:46ch}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:16px calc(-1*var(--gr)) 0 calc(-1*var(--gl));padding:2px var(--gr) 2px var(--gl)}
+.chips::-webkit-scrollbar{display:none}
+.chips.wrap{flex-wrap:wrap;overflow:visible;margin-inline:0;padding-inline:0}
+.chip{flex:none;padding:8px 14px;border-radius:99px;border:1.5px solid var(--line);font:500 13px/1 var(--f-body);color:var(--fg);white-space:nowrap;
+  transition:background .25s,color .25s,border-color .25s,transform .15s}
+button.chip:active{transform:scale(.94)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--on-ink)}
+.chip.off{color:var(--muted);text-decoration:line-through;border-style:dashed}
+.sec{font:500 11px/1 var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:26px 0 2px}
+
+/* ───── cabins: playing cards ───── */
+.deck{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+.cab{position:relative;aspect-ratio:5/6;max-width:100%;display:flex;flex-direction:column;justify-content:space-between;padding:12px;border-radius:18px;
+  border:1.5px solid var(--fg);background:var(--raise);transition:transform .2s var(--ease),background .3s,color .3s,border-color .3s}
+.cab:active{transform:scale(.965)}
+.cab-top,.cab-bot{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.cab-bot{align-items:flex-end}
+.idx{display:grid;justify-items:start;line-height:1}
+.idx b{font:800 36px/.9 var(--f-display);letter-spacing:-.04em}
+.idx i{font:700 10.5px/1 var(--f-mono);font-style:normal;letter-spacing:.1em;margin-top:5px}
+.idx.rev{transform:rotate(180deg);opacity:.35}
+.idx.rev b{font-size:20px}
+.idx.rev i{font-size:8.5px;margin-top:3px}
+.pill{display:inline-flex;align-items:center;gap:5px;font:700 9px/1 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;padding:5px 7px;border-radius:99px;border:1.5px solid currentColor;white-space:nowrap}
+.pill.on{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.pill.on::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;animation:live 1.8s ease-in-out infinite}
+@keyframes live{50%{opacity:.25}}
+.cab-mid{font:500 12.5px/1.3 var(--f-body);color:var(--muted)}
+.cab-mid strong{display:block;font:700 17px/1.1 var(--f-mono);color:var(--fg);font-variant-numeric:tabular-nums}
+.cab .price{font:700 15px/1 var(--f-mono);font-variant-numeric:tabular-nums}
+.cab .price small{font:500 10.5px/1 var(--f-mono);color:var(--muted);margin-left:2px}
+.cab.busy{border-color:var(--line);color:var(--muted);
+  background:repeating-linear-gradient(135deg,var(--hatch) 0 5px,transparent 5px 11px),var(--surface)}
+.cab.busy .cab-mid strong{color:var(--muted)}
+.cab.picked{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.cab.picked .cab-mid,.cab.picked .cab-mid strong,.cab.picked .price small{color:inherit}
+.cab.picked .pill{background:var(--on-ink);color:var(--ink);border-color:var(--on-ink)}
+.cab.flip{animation:flip .55s var(--ease)}
+@keyframes flip{0%{transform:perspective(700px) rotateY(0)}50%{transform:perspective(700px) rotateY(88deg)}100%{transform:perspective(700px) rotateY(0)}}
+
+/* ───── rows: hookahs, drinks, snacks ───── */
+.row,.line{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.line{grid-template-columns:minmax(0,1fr) auto}
+.thumb{width:52px;height:52px;border-radius:13px;background:var(--surface);display:grid;place-content:center;justify-items:center;gap:1px}
+.thumb b{font:700 14px/1 var(--f-mono);letter-spacing:-.02em}
+.thumb i{font:500 10px/1 var(--f-mono);font-style:normal;color:var(--muted)}
+.str{display:flex;align-items:flex-end;gap:3px;height:22px}
+.str i{width:6px;border-radius:2px;background:var(--line)}
+.str i:nth-child(1){height:40%}.str i:nth-child(2){height:70%}.str i:nth-child(3){height:100%}
+.str.s1 i:nth-child(-n+1),.str.s2 i:nth-child(-n+2),.str.s3 i{background:var(--fg)}
+.info{min-width:0}
+.info h3{font:600 15px/1.25 var(--f-body);transition:opacity .3s}
+.sub{font-size:12.5px;line-height:1.3;color:var(--muted);margin-top:1px}
+.stock{display:flex;align-items:center;gap:8px;margin-top:7px;min-height:18px}
+.bar{flex:0 0 52px;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:var(--w);background:var(--fg);border-radius:2px;transition:width .5s var(--ease)}
+.left{font:500 11px/1 var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.left.low{background:var(--ink);color:var(--on-ink);padding:4px 7px;border-radius:99px}
+.left.none{border:1.5px dashed var(--muted);padding:3px 7px;border-radius:99px}
+.row.out h3,.row.out .price,.row.out .thumb{opacity:.38}
+.row.out h3{text-decoration:line-through}
+.buy{display:grid;justify-items:end;gap:8px}
+.buy .price{font:700 14px/1 var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.qty{display:flex;align-items:center;justify-content:flex-end;width:36px;height:36px;border-radius:18px;background:var(--ink);color:var(--on-ink);overflow:hidden;
+  transition:width .38s var(--spring),opacity .25s}
+.qty:not([data-q="0"]){width:106px}
+.qty button{flex:0 0 36px;height:36px;display:grid;place-items:center;font:500 20px/1 var(--f-mono);transition:transform .15s,opacity .2s}
+.qty button:active{transform:scale(.8)}
+.qty button[disabled]{opacity:.3;cursor:default}
+.qty .n{flex:1 1 auto;min-width:0;text-align:center;font:700 14px/1 var(--f-mono);font-variant-numeric:tabular-nums}
+.qty[data-q="0"] .minus,.qty[data-q="0"] .n{visibility:hidden}
+.qty.adm{width:112px;background:transparent;color:var(--fg);box-shadow:inset 0 0 0 1.5px var(--fg)}
+.qty.adm .minus,.qty.adm .n{visibility:visible}
+.row.out .qty:not(.adm){opacity:.25;pointer-events:none}
+.n.up{animation:rollUp .28s var(--ease)}.n.down{animation:rollDown .28s var(--ease)}
+@keyframes rollUp{from{transform:translateY(70%);opacity:0}}
+@keyframes rollDown{from{transform:translateY(-70%);opacity:0}}
+
+/* hookah availability pips */
+.pips{display:flex;gap:7px;margin-top:16px;align-items:center;flex-wrap:wrap}
+.pips i{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--fg);background:var(--fg);transition:background .35s,border-color .35s,transform .35s var(--spring)}
+.pips i.b{background:repeating-linear-gradient(135deg,var(--hatch) 0 3px,transparent 3px 6px);border-color:var(--line);transform:scale(.86)}
+.adm-step{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding:10px 10px 10px 14px;border-radius:16px;background:var(--surface);font-weight:500;font-size:13.5px}
+
+/* ───── order ───── */
+.picker{margin-top:22px}
+.picker h4{margin:0;font:500 11px/1 var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;padding:0 20px;border-radius:18px;background:var(--ink);color:var(--on-ink);
+  font:700 13px/1 var(--f-display);letter-spacing:.01em;text-align:center;position:relative;overflow:hidden;transition:transform .18s var(--ease),opacity .2s}
+.btn:active{transform:scale(.975)}
+.btn.ghost{background:transparent;color:var(--fg);box-shadow:inset 0 0 0 1.5px var(--fg)}
+.btn.quiet{background:var(--surface);color:var(--fg);min-height:48px;font:600 13.5px/1 var(--f-body)}
+.btn.busy{pointer-events:none}
+.btn.busy::after{content:"";position:absolute;inset:0;background:var(--on-ink);opacity:.22;transform-origin:0 50%;animation:fill 1.1s var(--ease) forwards}
+@keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.stack{display:grid;gap:10px;margin-top:22px}
+.fine{font-size:12px;color:var(--muted);text-align:center}
+.empty{display:grid;justify-items:center;text-align:center;gap:10px;padding:28px 0 0}
+.empty h2,.done h2{font:800 24px/1.1 var(--f-display);letter-spacing:-.02em;text-wrap:balance}
+.empty p,.done p{color:var(--muted);max-width:32ch}
+.empty .btn{margin-top:12px}
+.hand{position:relative;width:220px;height:132px;margin:8px auto 4px}
+.hand i:nth-child(3){z-index:2}
+.hand i.o,.hand.ghost i{border-color:var(--ink)}
+.hand i{position:absolute;left:50%;bottom:6px;width:62px;height:90px;margin-left:-31px;border-radius:10px;background:var(--ink);border:1.5px solid var(--bg);
+  display:grid;place-items:center;color:var(--on-ink);transform-origin:50% 150%;transform:rotate(calc((var(--k) - 2)*14deg));
+  animation:fan .75s var(--spring) both;animation-delay:calc(var(--k)*75ms)}
+.hand i.o{background:var(--bg);color:var(--ink)}
+.hand.ghost i{background:var(--bg);border-style:dashed;border-color:var(--line)}
+.specs dd{text-wrap:balance}
+@keyframes fan{from{opacity:0;transform:rotate(0deg) translateY(30px) scale(.7)}}
+.hand svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.hand svg path{stroke-dasharray:40;stroke-dashoffset:40;animation:draw .5s .65s var(--ease) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.done{display:grid;justify-items:center;text-align:center;gap:8px;padding-top:26px}
+.done .lead{font:700 15px/1.3 var(--f-mono);color:var(--fg)}
+.rcpt{width:100%;margin-top:14px;padding:4px 14px;border-radius:16px;background:var(--surface);text-align:left}
+.rcpt li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;font-size:13.5px;border-bottom:1px dashed var(--line)}
+.rcpt li:last-child{border:0}
+.rcpt li span:last-child{font-family:var(--f-mono);font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.done .btn{margin-top:14px}
+
+/* cashier orders */
+.ord{margin-top:12px;padding:14px;border-radius:18px;border:1.5px solid var(--fg);background:var(--raise);transition:border-color .4s,opacity .4s}
+.ord.done-o{border-color:var(--line);color:var(--muted)}
+.ord header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ord header b{font:800 18px/1 var(--f-display)}
+.ord header span{font:500 11.5px/1.3 var(--f-mono);color:var(--muted)}
+.tag{font:700 9px/1 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;padding:4px 6px;border-radius:6px;border:1px dashed var(--muted);color:var(--muted);margin-left:auto}
+.ord ul{margin-top:10px}
+.ord li{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:3px 0}
+.ord li span:last-child{font-family:var(--f-mono);white-space:nowrap;font-variant-numeric:tabular-nums}
+.ord footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.ord footer b{font:700 16px/1 var(--f-mono);font-variant-numeric:tabular-nums}
+.sm{padding:10px 16px;border-radius:99px;background:var(--ink);color:var(--on-ink);font:600 13px/1 var(--f-body);transition:transform .15s}
+.sm:active{transform:scale(.93)}
+.served{font:700 10px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase}
+
+/* ───── tab bar ───── */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--bg);border-top:1px solid var(--line);
+  padding:0 var(--gr) env(safe-area-inset-bottom,0px) var(--gl)}
+.tabs-in{position:relative;max-width:488px;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:7px 0}
+.tab-ind{position:absolute;top:7px;bottom:7px;left:0;width:20%;border-radius:16px;background:var(--ink);transform:translateX(calc(var(--t,0)*100%));transition:transform .5s var(--spring)}
+.tab{position:relative;z-index:1;display:grid;justify-items:center;gap:4px;padding:8px 0 7px;color:var(--muted);font:500 10.5px/1 var(--f-body);transition:color .25s}
+.tab[aria-selected="true"]{color:var(--on-ink)}
+.tab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:transform .4s var(--spring)}
+.tab[aria-selected="true"] svg{transform:translateY(-1px) scale(1.08)}
+.ico{position:relative;display:grid}
+.badge{position:absolute;top:-6px;right:-11px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:var(--ink);color:var(--on-ink);
+  box-shadow:0 0 0 2px var(--bg);font:700 10px/17px var(--f-mono);text-align:center;transform:scale(0);transition:transform .35s var(--spring),background .25s,color .25s}
+.badge.show{transform:scale(1)}
+.tab[aria-selected="true"] .badge{background:var(--on-ink);color:var(--ink);box-shadow:0 0 0 2px var(--ink)}
+.badge.bump{animation:bump .45s var(--spring)}
+@keyframes bump{40%{transform:scale(1.55)}}
+.fly{position:fixed;z-index:60;pointer-events:none}
+.fly i{display:block;width:14px;height:14px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 2px var(--bg)}
+
+/* ───── sheet + toast ───── */
+.scrim{position:fixed;inset:0;z-index:40;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .35s}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:520px;margin:0 auto;background:var(--bg);border-radius:24px 24px 0 0;box-shadow:0 -1.5px 0 var(--fg);
+  padding:10px var(--gr) calc(20px + env(safe-area-inset-bottom,0px)) var(--gl);max-height:88%;overflow-y:auto;
+  transform:translateY(105%);visibility:hidden;transition:transform .5s cubic-bezier(.2,.9,.2,1),visibility 0s .5s}
+.sheet-open .scrim{opacity:1;pointer-events:auto}
+.sheet-open .sheet{transform:none;visibility:visible;transition:transform .5s cubic-bezier(.2,.9,.2,1),visibility 0s}
+.grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 16px}
+.sheet h2{font:800 22px/1.1 var(--f-display);letter-spacing:-.02em}
+.sheet .state{font:500 12.5px/1.3 var(--f-mono);color:var(--muted);margin-top:8px}
+.specs{margin-top:16px;border-top:1px solid var(--line)}
+.specs div{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.specs dt{color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:70;max-width:min(88%,420px);padding:11px 16px;border-radius:14px;background:var(--ink);color:var(--on-ink);
+  font:500 13px/1.3 var(--f-body);text-align:center;transform:translate(-50%,20px);opacity:0;pointer-events:none;transition:transform .4s var(--spring),opacity .25s}
+.toast.show{transform:translate(-50%,0);opacity:1}
+
+/* ───── entrance choreography ───── */
+.view.anim .vh{animation:rise .45s var(--ease) both}
+.view.anim .row,.view.anim .line,.view.anim .sec,.view.anim .ord,.view.anim .picker,.view.anim .stack,.view.anim .flav{
+  animation:rise .5s var(--ease) both;animation-delay:calc(min(var(--i,0),12)*34ms + 60ms)}
+@keyframes rise{from{opacity:0;transform:translate3d(var(--dx,0px),14px,0)}}
+.view.anim .cab{animation:deal .62s var(--spring) both;animation-delay:calc(var(--i,0)*55ms + 60ms)}
+.deck.redeal .cab{animation:deal .5s var(--spring) both;animation-delay:calc(var(--i,0)*40ms)}
+@keyframes deal{from{opacity:0;transform:translate3d(0,46px,0) rotate(-7deg) scale(.92)}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}}
+@media (min-width:560px){.app{border-inline:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="top-in gut">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><i style="--k:0"></i><i style="--k:1"></i><i style="--k:2"></i><i class="o" style="--k:3"></i><i class="o" style="--k:4"></i></div>
+        <h1 class="word"><b>FULL HOUSE</b><span>Меню и заказ</span></h1>
+      </div>
+      <div class="mode" role="group" aria-label="Режим просмотра">
+        <i class="mode-thumb" aria-hidden="true"></i>
+        <button type="button" id="mode-guest" data-act="mode" data-mode="guest" aria-pressed="true">Гость</button>
+        <button type="button" id="mode-admin" data-act="mode" data-mode="admin" aria-pressed="false">Касса</button>
+      </div>
+    </div>
+    <div class="adm-bar" aria-live="polite"><div><p class="gut">Режим кассы. Остатки и статусы кабинок сразу видят гости.</p></div></div>
+  </header>
+
+  <main class="view gut" id="view"></main>
+</div>
+
+<nav class="tabs" aria-label="Разделы">
+  <div class="tabs-in" id="tabs" role="tablist">
+    <i class="tab-ind" aria-hidden="true"></i>
+    <button class="tab" role="tab" id="tab-cabins" data-act="go" data-tab="cabins"><span class="ico"><svg viewBox="0 0 24 24"><path d="M7.5 7h9a5 5 0 0 1 4.9 4l.9 4.6a2.6 2.6 0 0 1-4.5 2.2L15.6 15H8.4l-2.2 2.8a2.6 2.6 0 0 1-4.5-2.2L2.6 11a5 5 0 0 1 4.9-4z"/><path d="M8 10v3M6.5 11.5h3M15.5 10.5h.01M17.5 12.5h.01"/></svg></span>Кабинки</button>
+    <button class="tab" role="tab" id="tab-hookah" data-act="go" data-tab="hookah"><span class="ico"><svg viewBox="0 0 24 24"><path d="M9.5 3.5h5l-.8 2.8h-3.4z"/><path d="M12 6.3v6.2"/><path d="M12 12.5c-2.2 1.9-4 3.4-4 6.2 0 1 .8 1.8 1.8 1.8h4.4c1 0 1.8-.8 1.8-1.8 0-2.8-1.8-4.3-4-6.2z"/><path d="M13.5 10.5c3.6-.2 6 1.6 6 5.5"/></svg></span>Кальяны</button>
+    <button class="tab" role="tab" id="tab-drinks" data-act="go" data-tab="drinks"><span class="ico"><svg viewBox="0 0 24 24"><path d="M6.5 7h11l-1.3 13a1 1 0 0 1-1 .9H8.8a1 1 0 0 1-1-.9z"/><path d="M7 11.5h10"/><path d="M12 7l1.2-4H16"/></svg></span>Напитки</button>
+    <button class="tab" role="tab" id="tab-snacks" data-act="go" data-tab="snacks"><span class="ico"><svg viewBox="0 0 24 24"><path d="M7 3.5h10l-1 3 1 11-1 3H8l-1-3 1-11z"/><path d="M10 11.5a2 2 0 1 0 4 0 2 2 0 0 0-4 0z"/></svg></span>Снеки</button>
+    <button class="tab" role="tab" id="tab-order" data-act="go" data-tab="order"><span class="ico"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-1.8-3 1.8-3-1.8L6 21z"/><path d="M9.5 8h5M9.5 12h5"/></svg><b class="badge" id="badge">0</b></span><span id="tab-order-label">Заказ</span></button>
+  </div>
+</nav>
+
+<div class="scrim" id="scrim" data-act="close"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Кабинка"><div class="grab" aria-hidden="true"></div><div id="sheet-body"></div></section>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ════════════════════════════════════════════════════════════════════
+   1. КАТАЛОГ. Всё, что меняется под заведение, лежит здесь.
+      Цены, остатки и состав — примеры для демо, замените на свои.
+   ════════════════════════════════════════════════════════════════════ */
+const CUR = '₽';
+const CABINS = [
+  {n:1, gen:'PS5', vip:true,  price:500, tv:'65″ 4K', pads:4, games:['EA FC 26','Mortal Kombat 1','UFC 5','GTA V']},
+  {n:2, gen:'PS5', vip:false, price:400, tv:'55″ 4K', pads:2, games:['EA FC 26','Mortal Kombat 1','UFC 5','GTA V']},
+  {n:3, gen:'PS4', vip:false, price:250, tv:'50″',    pads:2, games:['FIFA 23','Mortal Kombat 11','Tekken 7','GTA V']},
+  {n:4, gen:'PS4', vip:false, price:250, tv:'50″',    pads:2, games:['FIFA 23','Mortal Kombat 11','Tekken 7','GTA V']},
+  {n:5, gen:'PS4', vip:false, price:250, tv:'43″',    pads:2, games:['FIFA 23','Mortal Kombat 11','UFC 4','GTA V']},
+  {n:6, gen:'PS4', vip:false, price:250, tv:'43″',    pads:2, games:['FIFA 23','Mortal Kombat 11','UFC 4','GTA V']},
+  {n:7, gen:'PS3', vip:false, price:150, tv:'40″',    pads:2, games:['PES 2013','Mortal Kombat 9','Tekken Tag 2','GTA V']},
+  {n:8, gen:'PS3', vip:false, price:150, tv:'40″',    pads:2, games:['PES 2013','Mortal Kombat 9','Tekken Tag 2','GTA V']},
+];
+const HOOKAH_TOTAL = 6;
+const HOOKAHS = [
+  {id:'h1', name:'Классический',    desc:'Глиняная чаша, один вкус или микс',   price:800,  str:2},
+  {id:'h2', name:'На грейпфруте',   desc:'Фруктовая чаша, свежий и кислый',      price:1100, str:2},
+  {id:'h3', name:'На ананасе',      desc:'Большая фруктовая чаша на компанию',   price:1400, str:1},
+  {id:'h4', name:'Премиум',         desc:'Тёмные табаки, плотный дым',           price:1300, str:3},
+  {id:'h5', name:'Безникотиновый',  desc:'Чайная смесь, вкус на выбор',          price:800,  str:0},
+];
+const STRENGTH = ['Без никотина','Лёгкий','Средний','Крепкий'];
+const FLAVORS = ['Двойное яблоко','Мята','Арбуз','Дыня','Черника','Виноград','Персик','Манго','Лимон-лайм','Вишня'];
+const DRINKS = [
+  {id:'d1',  cat:'Газировка',   name:'Coca-Cola',        unit:['0,5','л'],   price:120, stock:24, cap:30},
+  {id:'d2',  cat:'Газировка',   name:'Fanta',            unit:['0,5','л'],   price:120, stock:11, cap:30},
+  {id:'d3',  cat:'Газировка',   name:'Sprite',           unit:['0,5','л'],   price:120, stock:3,  cap:30},
+  {id:'d4',  cat:'Газировка',   name:'Coca-Cola',        unit:['1','л'],     price:180, stock:8,  cap:12},
+  {id:'d5',  cat:'Энергетики',  name:'Red Bull',         unit:['0,25','л'],  price:220, stock:9,  cap:24},
+  {id:'d6',  cat:'Энергетики',  name:'Adrenaline Rush',  unit:['0,45','л'],  price:190, stock:0,  cap:24},
+  {id:'d7',  cat:'Энергетики',  name:'Burn',             unit:['0,45','л'],  price:180, stock:6,  cap:24},
+  {id:'d8',  cat:'Вода и соки', name:'Вода без газа',    unit:['0,5','л'],   price:60,  stock:40, cap:48},
+  {id:'d9',  cat:'Вода и соки', name:'Вода с газом',     unit:['0,5','л'],   price:60,  stock:17, cap:48},
+  {id:'d10', cat:'Вода и соки', name:'Сок яблочный',     unit:['0,33','л'],  price:110, stock:5,  cap:20},
+  {id:'d11', cat:'Вода и соки', name:'Холодный чай',     unit:['0,5','л'],   price:130, stock:2,  cap:20},
+  {id:'d12', cat:'Горячее',     name:'Чай чёрный',       unit:['0,8','л'],   price:200, stock:null},
+  {id:'d13', cat:'Горячее',     name:'Чай зелёный',      unit:['0,8','л'],   price:200, stock:null},
+  {id:'d14', cat:'Горячее',     name:'Американо',        unit:['200','мл'],  price:150, stock:null},
+];
+const SNACKS = [
+  {id:'s1',  cat:'Чипсы',            name:'Lay’s сметана и зелень', unit:['140','г'], price:190, stock:12, cap:20},
+  {id:'s2',  cat:'Чипсы',            name:'Lay’s краб',             unit:['140','г'], price:190, stock:4,  cap:20},
+  {id:'s3',  cat:'Чипсы',            name:'Pringles Original',      unit:['165','г'], price:320, stock:6,  cap:12},
+  {id:'s4',  cat:'Чипсы',            name:'Начос с сырным соусом',  unit:['100','г'], price:250, stock:7,  cap:10},
+  {id:'s5',  cat:'Орехи и сухарики', name:'Сухарики ржаные',        unit:['60','г'],  price:70,  stock:18, cap:30},
+  {id:'s6',  cat:'Орехи и сухарики', name:'Арахис солёный',         unit:['90','г'],  price:110, stock:9,  cap:20},
+  {id:'s7',  cat:'Орехи и сухарики', name:'Фисташки',               unit:['100','г'], price:290, stock:2,  cap:10},
+  {id:'s8',  cat:'Орехи и сухарики', name:'Попкорн солёный',        unit:['80','г'],  price:150, stock:0,  cap:15},
+  {id:'s9',  cat:'Шоколад',          name:'Snickers',               unit:['50','г'],  price:90,  stock:22, cap:36},
+  {id:'s10', cat:'Шоколад',          name:'Twix',                   unit:['55','г'],  price:90,  stock:15, cap:36},
+  {id:'s11', cat:'Шоколад',          name:'KitKat',                 unit:['42','г'],  price:85,  stock:7,  cap:36},
+  {id:'s12', cat:'Шоколад',          name:'M&M’s',                  unit:['45','г'],  price:100, stock:3,  cap:24},
+];
+const ITEMS = {};
+HOOKAHS.forEach(x => ITEMS[x.id] = {...x, type:'hookah'});
+DRINKS.forEach(x => ITEMS[x.id] = {...x, type:'drinks'});
+SNACKS.forEach(x => ITEMS[x.id] = {...x, type:'snacks'});
+const CAB = {}; CABINS.forEach(c => CAB[c.n] = c);
+const TABS = ['cabins','hookah','drinks','snacks','order'];
+
+/* ════════════════════════════════════════════════════════════════════
+   2. ХРАНИЛИЩЕ. В демо состояние живёт в браузере.
+      В боевой версии load/save заменяются запросами к API кассы.
+   ════════════════════════════════════════════════════════════════════ */
+const KEY = 'fullhouse-kassa-v1';
+const HOUR = 36e5, MIN = 6e4;
+function seed() {
+  const now = Date.now(), stock = {};
+  [...DRINKS, ...SNACKS].forEach(x => stock[x.id] = x.stock);
+  return {
+    t: now,
+    busy: {1: now + 50*MIN, 3: now + 25*MIN, 6: now + 95*MIN},
+    hookahFree: 4,
+    flavorsOff: ['Персик','Вишня'],
+    stock,
+    orders: [
+      {no:103, t: now - 12*MIN, place:'3', pay:'card', total:1040, status:'new', ex:true,
+       lines:[['Кальян «Классический»',1,800],['Coca-Cola 0,5 л',2,240]]},
+      {no:102, t: now - 41*MIN, place:'hall', pay:'cash', total:470, status:'done', ex:true,
+       lines:[['Red Bull 0,25 л',1,220],['Начос с сырным соусом',1,250]]},
+    ],
+    nextNo: 104,
+    cart: {items:{}, cabins:{}},
+    place: 'hall', pay: 'card',
+  };
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && s.stock && s.cart && Date.now() - s.t < 8*HOUR) return s;
+  } catch (e) {}
+  return seed();
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+let state = load();
+const ui = {tab:'cabins', mode:'guest', dir:1, cabFilter:'all', cat:{drinks:'all', snacks:'all'}, done:null, sheet:null};
+const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Telegram Mini App. Скрипт telegram-web-app.js подключается в сборке для хостинга (build.py).
+   Вне Telegram (браузер, демо) этот блок ничего не делает. */
+const tg = window.Telegram && window.Telegram.WebApp;
+const inTg = !!(tg && tg.initData);
+const haptic = kind => { try { if (inTg && tg.HapticFeedback) kind === 'success' ? tg.HapticFeedback.notificationOccurred('success') : tg.HapticFeedback.impactOccurred(kind || 'light'); } catch (e) {} };
+function tgTheme() { try {
+  if (tg.colorScheme) document.documentElement.dataset.theme = tg.colorScheme;
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  tg.setHeaderColor && tg.setHeaderColor(bg); tg.setBackgroundColor && tg.setBackgroundColor(bg); tg.setBottomBarColor && tg.setBottomBarColor(bg);
+} catch (e) {} }
+if (inTg) { try {
+  tg.ready(); tg.expand(); tgTheme(); tg.onEvent && tg.onEvent('themeChanged', tgTheme);
+  tg.disableVerticalSwipes && tg.disableVerticalSwipes();
+  const sp = tg.initDataUnsafe && tg.initDataUnsafe.start_param;      // QR кабинки: t.me/<bot>/<app>?startapp=cab3
+  if (sp && /^cab\d+$/.test(sp) && CAB[+sp.slice(3)]) state.place = sp.slice(3);
+} catch (e) {} }
+
+/* ════════════════════════════════════════════════════════════════════
+   3. ПОМОЩНИКИ
+   ════════════════════════════════════════════════════════════════════ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const group = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const money = n => group(n) + ' ' + CUR;
+const hhmm = t => { const d = new Date(t); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); };
+const dur = t => { const m = Math.max(1, Math.round((t - Date.now())/MIN)); return m < 60 ? m + ' мин' : Math.floor(m/60) + ' ч' + (m%60 ? ' ' + (m%60) + ' мин' : ''); };
+const hoursWord = h => h + (h === 1 ? ' час' : h < 5 ? ' часа' : ' часов');
+const busy = n => (state.busy[n] && state.busy[n] > Date.now()) ? state.busy[n] : 0;
+const freeCabs = () => CABINS.filter(c => !busy(c.n)).length;
+const stockOf = id => ITEMS[id].type === 'hookah' ? state.hookahFree : state.stock[id];
+const cartQ = id => state.cart.items[id] || 0;
+const hookahsInCart = () => HOOKAHS.reduce((s, h) => s + cartQ(h.id), 0);
+const maxFor = id => {
+  const it = ITEMS[id];
+  if (it.type === 'hookah') return Math.max(0, state.hookahFree - (hookahsInCart() - cartQ(id)));
+  return state.stock[id] === null ? 20 : state.stock[id];
+};
+const placeName = p => p === 'hall' ? 'Зал' : 'Кабинка №' + p;
+const fullName = it => it.type === 'hookah' ? 'Кальян «' + it.name + '»' : it.name + ' ' + it.unit.join(' ');
+function cartLines() {
+  const L = [];
+  Object.keys(state.cart.cabins).forEach(n => { const c = CAB[n], h = state.cart.cabins[n];
+    L.push({id:'cab:' + n, name:'Кабинка №' + n + ' · ' + c.gen, sub: money(c.price) + ' в час', qty:h, sum:c.price*h, unit:'ч'}); });
+  Object.keys(state.cart.items).forEach(id => { const it = ITEMS[id], q = state.cart.items[id];
+    L.push({id, name: it.type === 'hookah' ? 'Кальян «' + it.name + '»' : it.name,
+            sub: (it.type === 'hookah' ? STRENGTH[it.str] : it.unit.join(' ')) + ' · ' + money(it.price), qty:q, sum:it.price*q, unit:''}); });
+  return L;
+}
+const cartTotal = () => cartLines().reduce((s, l) => s + l.sum, 0);
+const cartCount = () => Object.values(state.cart.items).reduce((s, q) => s + q, 0) + Object.keys(state.cart.cabins).length;
+
+function animateNum(el, to, from, ms) {
+  if (!el) return;
+  const f = el.hasAttribute('data-money') ? money : group;
+  from = from === undefined ? 0 : from; el.dataset.num = to;
+  if (reduce || from === to) { el.textContent = f(to); return; }
+  const t0 = performance.now(), D = ms || 650;
+  const step = t => { const p = Math.min(1, (t - t0)/D), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = f(Math.round(from + (to - from)*e));
+    if (p < 1 && el.isConnected) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+const setBig = to => { const el = $('.big b'); if (el) animateNum(el, to, +el.dataset.num || 0, 380); };
+function roll(el, val, d) { if (!el) return; el.textContent = val; el.classList.remove('up','down'); void el.offsetWidth; el.classList.add(d > 0 ? 'up' : 'down'); }
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
+function bump() { const b = $('#badge'); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
+function fly(from) {
+  if (reduce || !from || !from.animate) return bump();
+  const a = from.getBoundingClientRect(), b = $('#tab-order .ico').getBoundingClientRect();
+  const dot = document.createElement('div'); dot.className = 'fly'; dot.innerHTML = '<i></i>';
+  dot.style.left = (a.left + a.width/2 - 7) + 'px'; dot.style.top = (a.top + a.height/2 - 7) + 'px';
+  document.body.appendChild(dot);
+  const dx = b.left + b.width/2 - (a.left + a.width/2), dy = b.top + b.height/2 - (a.top + a.height/2);
+  dot.animate([{transform:'translateX(0)'}, {transform:'translateX(' + dx + 'px)'}], {duration:560, easing:'linear', fill:'forwards'});
+  const an = dot.firstChild.animate([{transform:'translateY(0) scale(1)'}, {transform:'translateY(' + dy + 'px) scale(.45)'}],
+    {duration:560, easing:'cubic-bezier(.3,-.55,.85,.55)', fill:'forwards'});
+  an.onfinish = () => { dot.remove(); bump(); };
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   4. ЭКРАНЫ
+   ════════════════════════════════════════════════════════════════════ */
+const head = (eyebrow, num, label, extra, moneyNum) =>
+  '<div class="vh"><p class="eyebrow">' + eyebrow + '</p><div class="big"><b data-num="' + num + '"' + (moneyNum ? ' data-money' : '') + '>' +
+  (moneyNum ? money(num) : group(num)) + '</b><span>' + label + '</span></div>' + (extra || '') + '</div>';
+const chip = (label, on, act, attrs) => '<button type="button" class="chip' + (on ? ' on' : '') + '" data-act="' + act + '" ' + attrs + '>' + label + '</button>';
+
+/* — Кабинки — */
+function cabCard(c, i) {
+  const b = busy(c.n), h = state.cart.cabins[c.n], picked = !b && h && ui.mode === 'guest';
+  const idx = '<b>' + c.n + '</b><i>' + c.gen + '</i>';
+  const mid = b ? '<strong>до ' + hhmm(b) + '</strong>ещё ' + dur(b)
+            : picked ? '<strong>' + hoursWord(h) + '</strong>в вашем заказе'
+            : (c.vip ? 'VIP · ' : '') + c.tv + ' · ' + c.pads + ' геймпада';
+  return '<button type="button" class="cab' + (b ? ' busy' : '') + (picked ? ' picked' : '') + '" data-act="cab" data-n="' + c.n + '" style="--i:' + i + '"' +
+    ' aria-label="Кабинка ' + c.n + ', ' + c.gen + ', ' + (b ? 'занята до ' + hhmm(b) : 'свободна') + '">' +
+    '<span class="cab-top"><span class="idx">' + idx + '</span><span class="pill' + (b ? '' : ' on') + '">' + (b ? 'Занята' : picked ? 'Выбрана' : 'Свободна') + '</span></span>' +
+    '<span class="cab-mid">' + mid + '</span>' +
+    '<span class="cab-bot"><span class="price">' + money(c.price) + '<small>/час</small></span><span class="idx rev" aria-hidden="true">' + idx + '</span></span></button>';
+}
+const deckHTML = () => CABINS.filter(c => ui.cabFilter === 'all' || c.gen === ui.cabFilter).map(cabCard).join('');
+function viewCabins() {
+  const gens = ['all','PS5','PS4','PS3'];
+  const chips = '<div class="chips" id="cab-chips">' + gens.map(g => chip(g === 'all' ? 'Все ' + CABINS.length : g + ' · ' + CABINS.filter(c => c.gen === g).length,
+    ui.cabFilter === g, 'cabf', 'data-g="' + g + '"')).join('') + '</div>';
+  return head('Кабинки PlayStation', freeCabs(), 'из ' + CABINS.length + ' свободно', chips) + '<div class="deck" id="deck">' + deckHTML() + '</div>';
+}
+function refreshCabs(flipN, redeal) {
+  const d = $('#deck'); if (!d) return;
+  d.classList.toggle('redeal', !!redeal); d.innerHTML = deckHTML();
+  if (flipN) { const c = $('.cab[data-n="' + flipN + '"]', d); if (c) c.classList.add('flip'); }
+  setBig(freeCabs());
+}
+
+/* — Строка товара — */
+function stockHTML(it) {
+  if (it.type === 'hookah') return '<p class="sub">' + it.desc + '</p><div class="stock"><span class="left">' + STRENGTH[it.str] + '</span></div>';
+  const st = state.stock[it.id];
+  if (st === null) return '<div class="stock"><span class="left">Готовим при заказе</span></div>';
+  if (st === 0) return '<div class="stock"><span class="left none">Закончилось</span></div>';
+  const w = Math.max(6, Math.min(100, Math.round(st / (it.cap || st) * 100)));
+  return '<div class="stock"><span class="bar"><i style="--w:' + w + '%"></i></span><span class="left' + (st <= 3 ? ' low' : '') + '">' + (st <= 3 ? 'Осталось ' + st : st + ' шт.') + '</span></div>';
+}
+function qtyHTML(id, q, max, cls) {
+  return '<div class="qty' + (cls || '') + '" data-q="' + q + '">' +
+    '<button type="button" class="minus" data-act="chg" data-id="' + id + '" data-d="-1" aria-label="Меньше">−</button>' +
+    '<span class="n" aria-live="polite">' + q + '</span>' +
+    '<button type="button" class="plus" data-act="chg" data-id="' + id + '" data-d="1" aria-label="Больше"' + (q >= max ? ' disabled' : '') + '>+</button></div>';
+}
+function rowHTML(it, i) {
+  const admin = ui.mode === 'admin', st = stockOf(it.id);
+  const thumb = it.type === 'hookah' ? '<span class="str s' + it.str + '"><i></i><i></i><i></i></span>' : '<b>' + it.unit[0] + '</b><i>' + it.unit[1] + '</i>';
+  let ctl = '';
+  if (admin) ctl = (it.type !== 'hookah' && st !== null) ? qtyHTML(it.id, st, 99, ' adm') : '';
+  else ctl = qtyHTML(it.id, cartQ(it.id), maxFor(it.id));
+  return '<article class="row' + (st === 0 ? ' out' : '') + '" data-id="' + it.id + '" style="--i:' + i + '">' +
+    '<div class="thumb" aria-hidden="true">' + thumb + '</div>' +
+    '<div class="info"><h3>' + it.name + '</h3><div class="st">' + stockHTML(it) + '</div></div>' +
+    '<div class="buy"><div class="price">' + money(it.price) + '</div>' + ctl + '</div></article>';
+}
+function patchRows(d) {
+  const admin = ui.mode === 'admin';
+  $$('.row[data-id]').forEach(row => {
+    const it = ITEMS[row.dataset.id], st = stockOf(it.id);
+    row.classList.toggle('out', st === 0);
+    const bar = $('.bar i', row), box = $('.st', row);
+    if (bar && st > 0 && st !== null && it.type !== 'hookah') {
+      bar.style.setProperty('--w', Math.max(6, Math.min(100, Math.round(st/(it.cap || st)*100))) + '%');
+      const left = $('.left', row); left.className = 'left' + (st <= 3 ? ' low' : ''); left.textContent = st <= 3 ? 'Осталось ' + st : st + ' шт.';
+    } else box.innerHTML = stockHTML(it);
+    const q = $('.qty', row); if (!q) return;
+    const val = admin ? st : cartQ(it.id), n = $('.n', q);
+    if (+q.dataset.q !== val) { q.dataset.q = val; roll(n, val, d || 1); }
+    $('.plus', q).disabled = admin ? val >= 99 : val >= maxFor(it.id);
+  });
+}
+
+/* — Кальяны — */
+const pipsHTML = () => Array.from({length: HOOKAH_TOTAL}, (_, i) => '<i class="' + (i < state.hookahFree ? '' : 'b') + '"></i>').join('');
+function viewHookah() {
+  const admin = ui.mode === 'admin';
+  let extra = '<div class="pips" id="pips" aria-hidden="true">' + pipsHTML() + '</div>';
+  if (admin) extra += '<div class="adm-step"><span>Свободно кальянов</span><div class="qty adm" data-q="' + state.hookahFree + '">' +
+    '<button type="button" class="minus" data-act="hk" data-d="-1" aria-label="Меньше">−</button><span class="n" id="hk-n">' + state.hookahFree + '</span>' +
+    '<button type="button" class="plus" data-act="hk" data-d="1" aria-label="Больше">+</button></div></div>';
+  const rows = HOOKAHS.map((h, i) => rowHTML(ITEMS[h.id], i)).join('');
+  const fl = FLAVORS.map(f => { const off = state.flavorsOff.includes(f);
+    return admin ? '<button type="button" class="chip' + (off ? ' off' : '') + '" data-act="flav" data-f="' + f + '" aria-pressed="' + !off + '">' + f + '</button>'
+                 : '<span class="chip' + (off ? ' off' : '') + '">' + f + '</span>'; }).join('');
+  return head('Кальяны', state.hookahFree, 'из ' + HOOKAH_TOTAL + ' свободно', extra) + '<div class="list">' + rows + '</div>' +
+    '<p class="sec" style="--i:6">Вкусы сегодня</p><div class="chips wrap flav" style="--i:7">' + fl + '</div>' +
+    '<p class="note">' + (admin ? 'Нажмите на вкус, чтобы убрать его из наличия или вернуть.' : 'Зачёркнутые вкусы закончились. Микс соберёт кальянщик.') + ' 18+. Курение вредит вашему здоровью.</p>';
+}
+
+/* — Напитки и снеки — */
+function viewShelf(type) {
+  const list = type === 'drinks' ? DRINKS : SNACKS, cats = [...new Set(list.map(x => x.cat))], cur = ui.cat[type];
+  const units = list.reduce((s, x) => s + (state.stock[x.id] || 0), 0), outN = list.filter(x => state.stock[x.id] === 0).length;
+  const chips = '<div class="chips">' + chip('Все', cur === 'all', 'cat', 'data-c="all"') + cats.map(c => chip(c, cur === c, 'cat', 'data-c="' + c + '"')).join('') + '</div>';
+  let i = 0, body = '';
+  cats.filter(c => cur === 'all' || cur === c).forEach(c => {
+    body += '<p class="sec" style="--i:' + (i++) + '">' + c + '</p>';
+    list.filter(x => x.cat === c).forEach(x => body += rowHTML(ITEMS[x.id], i++));
+  });
+  return head(type === 'drinks' ? 'Напитки' : 'Снеки', units, 'шт. в наличии',
+    '<p class="note" id="shelf-note">' + list.length + ' позиций в меню' + (outN ? ', закончилось: ' + outN : '') + '.</p>' + chips, false) + '<div class="list" id="shelf">' + body + '</div>';
+}
+const shelfUnits = type => (type === 'drinks' ? DRINKS : SNACKS).reduce((s, x) => s + (state.stock[x.id] || 0), 0);
+
+/* — Заказ (гость) — */
+function lineHTML(l, i) {
+  const max = l.id.startsWith('cab:') ? 8 : maxFor(l.id);
+  return '<div class="line" data-id="' + l.id + '" style="--i:' + i + '"><div class="info"><h3>' + l.name + '</h3><p class="sub">' + l.sub + '</p></div>' +
+    '<div class="buy"><div class="price" data-sum>' + money(l.sum) + '</div>' + qtyHTML(l.id, l.qty, max) + '</div></div>';
+}
+function doneHTML(o) {
+  const cards = [0,1,2,3,4].map(k => '<i class="' + (k > 2 ? 'o' : '') + '" style="--k:' + k + '">' + (k === 2 ? '<svg viewBox="0 0 32 32"><path d="M7 17l6 6L25 10"/></svg>' : '') + '</i>').join('');
+  return '<div class="done"><div class="hand" aria-hidden="true">' + cards + '</div>' +
+    '<p class="eyebrow">' + (o.pay === 'card' ? 'Оплачено' : 'Оплата на кассе') + '</p><h2>Заказ №' + o.no + '</h2>' +
+    '<p class="lead">' + money(o.total) + ' · ' + placeName(o.place) + '</p>' +
+    '<p>' + (o.place === 'hall' ? 'Назовите номер на кассе. Соберём заказ за пару минут.' : 'Принесём в кабинку №' + o.place + '. Номер заказа уже на кассе.') + '</p>' +
+    '<ul class="rcpt">' + o.lines.map(l => '<li><span>' + l[0] + (l[1] > 1 ? ' × ' + l[1] : '') + '</span><span>' + money(l[2]) + '</span></li>').join('') + '</ul>' +
+    '<button type="button" class="btn" data-act="again">Вернуться в меню</button></div>';
+}
+function viewOrderGuest() {
+  if (ui.done) return doneHTML(ui.done);
+  const L = cartLines();
+  if (!L.length) return '<div class="vh"><p class="eyebrow">Ваш заказ</p></div><div class="empty"><div class="hand ghost" aria-hidden="true">' +
+    [0,1,2,3,4].map(k => '<i style="--k:' + k + '"></i>').join('') + '</div><h2>Заказ пуст</h2>' +
+    '<p>Добавьте кабинку, кальян, напитки или снеки. Здесь появятся сумма и оплата.</p>' +
+    '<button type="button" class="btn" data-act="go" data-tab="cabins">Выбрать кабинку</button></div>';
+  const places = chip('Зал', state.place === 'hall', 'place', 'data-p="hall"') + CABINS.map(c => chip('№' + c.n, state.place === String(c.n), 'place', 'data-p="' + c.n + '"')).join('');
+  const pays = chip('Картой онлайн', state.pay === 'card', 'payby', 'data-p="card"') + chip('Наличными на кассе', state.pay === 'cash', 'payby', 'data-p="cash"');
+  const total = cartTotal(), n = L.length;
+  return head('Ваш заказ', total, 'к оплате', '', true) + '<div class="list" id="lines">' + L.map(lineHTML).join('') + '</div>' +
+    '<div class="picker" style="--i:' + (n+1) + '"><h4>Куда принести</h4><div class="chips" id="places">' + places + '</div>' +
+    '<p class="note">По QR-коду на столе место подставится само.</p></div>' +
+    '<div class="picker" style="--i:' + (n+2) + '"><h4>Оплата</h4><div class="chips wrap" id="pays">' + pays + '</div></div>' +
+    '<div class="stack" style="--i:' + (n+3) + '"><button type="button" class="btn" id="pay" data-act="pay"><span id="pay-label">' + payLabel(total) + '</span></button>' +
+    '<p class="fine">Демо-режим: деньги не списываются.</p></div>';
+}
+const payLabel = t => (state.pay === 'card' ? 'Оплатить ' : 'Оформить ') + money(t);
+
+/* — Заказы (касса) — */
+function ordHTML(o, i) {
+  return '<article class="ord' + (o.status === 'done' ? ' done-o' : '') + '" data-no="' + o.no + '" style="--i:' + i + '">' +
+    '<header><b>№' + o.no + '</b><span>' + hhmm(o.t) + ' · ' + placeName(o.place) + ' · ' + (o.pay === 'card' ? 'картой' : 'наличные') + '</span>' + (o.ex ? '<em class="tag">пример</em>' : '') + '</header>' +
+    '<ul>' + o.lines.map(l => '<li><span>' + l[0] + (l[1] > 1 ? ' × ' + l[1] : '') + '</span><span>' + money(l[2]) + '</span></li>').join('') + '</ul>' +
+    '<footer><b>' + money(o.total) + '</b>' + (o.status === 'new' ? '<button type="button" class="sm" data-act="serve" data-no="' + o.no + '">Выдать</button>' : '<span class="served">Выдан</span>') + '</footer></article>';
+}
+function viewOrderAdmin() {
+  const newN = state.orders.filter(o => o.status === 'new').length, rev = state.orders.reduce((s, o) => s + o.total, 0);
+  return head('Заказы смены', newN, newN === 1 ? 'ждёт выдачи' : 'ждут выдачи',
+    '<p class="note">Выручка смены: <b class="mono" style="color:var(--fg)">' + money(rev) + '</b> · заказов: ' + state.orders.length + '</p>') +
+    state.orders.map(ordHTML).join('') +
+    '<div class="stack" style="--i:' + (state.orders.length + 1) + '"><button type="button" class="btn quiet" data-act="reset">Сбросить демо к началу</button></div>';
+}
+
+const VIEWS = {
+  cabins: viewCabins, hookah: viewHookah,
+  drinks: () => viewShelf('drinks'), snacks: () => viewShelf('snacks'),
+  order: () => ui.mode === 'admin' ? viewOrderAdmin() : viewOrderGuest(),
+};
+function render(anim) {
+  const v = $('#view');
+  v.className = 'view gut' + (anim ? ' anim' : '');
+  v.style.setProperty('--dx', (ui.dir * 16) + 'px');
+  v.innerHTML = VIEWS[ui.tab]();
+  if (anim) { const b = $('.big b', v); if (b) animateNum(b, +b.dataset.num, 0); }
+  chrome();
+}
+function chrome() {
+  const admin = ui.mode === 'admin';
+  $('#app').classList.toggle('is-admin', admin);
+  $('#mode-guest').setAttribute('aria-pressed', !admin); $('#mode-admin').setAttribute('aria-pressed', admin);
+  $('#tabs').style.setProperty('--t', TABS.indexOf(ui.tab));
+  TABS.forEach(t => $('#tab-' + t).setAttribute('aria-selected', t === ui.tab));
+  $('#tab-order-label').textContent = admin ? 'Заказы' : 'Заказ';
+  const n = admin ? state.orders.filter(o => o.status === 'new').length : cartCount(), b = $('#badge');
+  b.textContent = n; b.classList.toggle('show', n > 0);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   5. ШТОРКА КАБИНКИ
+   ════════════════════════════════════════════════════════════════════ */
+function sheetHTML() {
+  const n = ui.sheet.n, c = CAB[n], b = busy(n), admin = ui.mode === 'admin', h = ui.sheet.h, inCart = state.cart.cabins[n];
+  const specs = '<dl class="specs"><div><dt>Консоль</dt><dd>' + c.gen + (c.vip ? ' · VIP-комната' : '') + '</dd></div><div><dt>Экран</dt><dd>' + c.tv + '</dd></div>' +
+    '<div><dt>Геймпады</dt><dd>' + c.pads + '</dd></div><div><dt>Игры</dt><dd>' + c.games.join(', ') + '</dd></div></dl>';
+  const hrs = '<div class="picker"><h4>' + (admin ? 'Занять на' : 'На сколько') + '</h4><div class="chips wrap">' +
+    [1,2,3,5].map(x => chip(hoursWord(x), h === x, 'hours', 'data-h="' + x + '"')).join('') + '</div></div>';
+  let s = '<h2>Кабинка №' + n + '</h2><p class="state">' + (b ? 'Занята до ' + hhmm(b) + ' · ещё ' + dur(b) : 'Свободна · ' + money(c.price) + ' в час') + '</p>' + specs;
+  if (admin) s += b
+    ? '<div class="stack"><button type="button" class="btn" data-act="extend">Продлить на 30 минут</button><button type="button" class="btn ghost" data-act="release">Освободить кабинку</button></div>'
+    : hrs + '<div class="stack"><button type="button" class="btn" data-act="occupy">Занять до ' + hhmm(Date.now() + h*HOUR) + '</button></div>';
+  else s += b
+    ? '<div class="stack"><button type="button" class="btn ghost" data-act="close">Понятно</button></div>'
+    : hrs + '<div class="stack"><button type="button" class="btn" data-act="book">' + (inCart ? 'Обновить заказ · ' : 'Добавить в заказ · ') + money(c.price*h) + '</button>' +
+      (inCart ? '<button type="button" class="btn ghost" data-act="unbook">Убрать из заказа</button>' : '') + '</div>';
+  return s;
+}
+function openSheet(n) {
+  ui.sheet = {n, h: state.cart.cabins[n] || 1};
+  $('#sheet-body').innerHTML = sheetHTML();
+  document.body.classList.add('sheet-open');
+  const f = $('#sheet .btn'); if (f) setTimeout(() => f.focus({preventScroll:true}), 60);
+}
+function closeSheet() { document.body.classList.remove('sheet-open'); ui.sheet = null; }
+
+/* ════════════════════════════════════════════════════════════════════
+   6. ДЕЙСТВИЯ
+   ════════════════════════════════════════════════════════════════════ */
+function go(tab, force) {
+  if (!TABS.includes(tab)) tab = 'cabins';
+  if (tab === ui.tab && !force) return;
+  ui.dir = TABS.indexOf(tab) >= TABS.indexOf(ui.tab) ? 1 : -1;
+  if (ui.tab === 'order') ui.done = null;
+  ui.tab = tab; render(true); window.scrollTo(0, 0);
+  try { if (location.hash.slice(1) !== tab) history.replaceState(null, '', '#' + tab); } catch (e) { try { location.hash = tab; } catch (e2) {} }
+}
+function patchOrder(id, d) {
+  const L = cartLines(), l = L.find(x => x.id === id), row = $('.line[data-id="' + id + '"]');
+  if (!l || !L.length) { render(false); return; }
+  if (row) { const q = $('.qty', row); q.dataset.q = l.qty; roll($('.n', q), l.qty, d); $('[data-sum]', row).textContent = money(l.sum);
+    $('.plus', q).disabled = l.qty >= (id.startsWith('cab:') ? 8 : maxFor(id)); }
+  $$('.line[data-id^="h"]').forEach(r => { $('.plus', r).disabled = cartQ(r.dataset.id) >= maxFor(r.dataset.id); });
+  const t = cartTotal(); setBig(t); $('#pay-label').textContent = payLabel(t);
+}
+const ACT = {
+  go: el => go(el.dataset.tab),
+  mode: el => { if (ui.mode === el.dataset.mode) return; ui.mode = el.dataset.mode; ui.done = null; closeSheet(); ui.dir = 1; render(true);
+    toast(ui.mode === 'admin' ? 'Вы в режиме кассы' : 'Так меню видит гость'); },
+  cabf: el => { ui.cabFilter = el.dataset.g; $$('#cab-chips .chip').forEach(c => c.classList.toggle('on', c === el)); refreshCabs(0, true); },
+  cat: el => { ui.cat[ui.tab] = el.dataset.c; ui.dir = 1; render(false); const s = $('#shelf'); $('#view').classList.add('anim'); void s.offsetWidth; },
+  cab: el => openSheet(+el.dataset.n),
+  close: closeSheet,
+  hours: el => { ui.sheet.h = +el.dataset.h; $('#sheet-body').innerHTML = sheetHTML(); },
+  book: () => { const n = ui.sheet.n, isNew = !state.cart.cabins[n]; state.cart.cabins[n] = ui.sheet.h;
+    if (state.place === 'hall') state.place = String(n);
+    save(); closeSheet(); refreshCabs(n); chrome(); haptic('medium');
+    setTimeout(() => { if (isNew) fly($('.cab[data-n="' + n + '"] .pill')); else bump(); }, 320);
+    toast('Кабинка №' + n + ' в заказе на ' + hoursWord(state.cart.cabins[n])); },
+  unbook: () => { const n = ui.sheet.n; delete state.cart.cabins[n]; if (state.place === String(n)) state.place = 'hall'; save(); closeSheet(); refreshCabs(n); chrome(); },
+  occupy: () => { const n = ui.sheet.n; state.busy[n] = Date.now() + ui.sheet.h*HOUR; delete state.cart.cabins[n]; save(); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' занята до ' + hhmm(state.busy[n])); },
+  release: () => { const n = ui.sheet.n; delete state.busy[n]; save(); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' свободна'); },
+  extend: () => { const n = ui.sheet.n; state.busy[n] = busy(n) + 30*MIN; save(); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' продлена до ' + hhmm(state.busy[n])); },
+  chg: el => {
+    const id = el.dataset.id, d = +el.dataset.d;
+    if (id.startsWith('cab:')) {                                   // часы кабинки в заказе
+      const n = id.slice(4), h = (state.cart.cabins[n] || 0) + d;
+      if (h > 8) return; if (h <= 0) delete state.cart.cabins[n]; else state.cart.cabins[n] = h;
+      save(); chrome(); patchOrder(id, d); return;
+    }
+    if (ui.mode === 'admin') {                                     // касса правит остаток
+      state.stock[id] = Math.max(0, Math.min(99, state.stock[id] + d)); save(); patchRows(d);
+      setBig(shelfUnits(ITEMS[id].type)); return;
+    }
+    const q = cartQ(id), nq = Math.max(0, Math.min(maxFor(id), q + d));
+    if (nq === q) { if (d > 0) toast(ITEMS[id].type === 'hookah' ? 'Свободных кальянов больше нет' : 'Больше нет в наличии'); return; }
+    if (nq) state.cart.items[id] = nq; else delete state.cart.items[id];
+    save(); chrome(); haptic('light');
+    if (ui.tab === 'order') patchOrder(id, d); else { patchRows(d); if (d > 0) fly(el); }
+  },
+  hk: el => { const d = +el.dataset.d, v = Math.max(0, Math.min(HOOKAH_TOTAL, state.hookahFree + d)); if (v === state.hookahFree) return;
+    state.hookahFree = v; save(); roll($('#hk-n'), v, d); $('#hk-n').parentNode.dataset.q = v; $('#pips').innerHTML = pipsHTML(); setBig(v); },
+  flav: el => { const f = el.dataset.f, i = state.flavorsOff.indexOf(f); if (i >= 0) state.flavorsOff.splice(i, 1); else state.flavorsOff.push(f);
+    save(); el.classList.toggle('off', i < 0); el.setAttribute('aria-pressed', i >= 0); },
+  place: el => { state.place = el.dataset.p; save(); $$('#places .chip').forEach(c => c.classList.toggle('on', c === el)); },
+  payby: el => { state.pay = el.dataset.p; save(); $$('#pays .chip').forEach(c => c.classList.toggle('on', c === el)); $('#pay-label').textContent = payLabel(cartTotal()); },
+  pay: el => {
+    el.classList.add('busy'); el.disabled = true; $('#pay-label').textContent = state.pay === 'card' ? 'Проводим оплату…' : 'Оформляем…';
+    setTimeout(() => {
+      const L = cartLines(), now = Date.now();
+      Object.keys(state.cart.items).forEach(id => { const q = state.cart.items[id], it = ITEMS[id];
+        if (it.type === 'hookah') state.hookahFree = Math.max(0, state.hookahFree - q);
+        else if (state.stock[id] !== null) state.stock[id] = Math.max(0, state.stock[id] - q); });
+      Object.keys(state.cart.cabins).forEach(n => state.busy[n] = now + state.cart.cabins[n]*HOUR);
+      const o = {no: state.nextNo++, t: now, place: state.place, pay: state.pay, status:'new', total: L.reduce((s, l) => s + l.sum, 0),
+        lines: L.map(l => [l.id.startsWith('cab:') ? l.name + ', ' + hoursWord(l.qty) : fullName(ITEMS[l.id]), l.id.startsWith('cab:') ? 1 : l.qty, l.sum])};
+      state.orders.unshift(o); state.cart = {items:{}, cabins:{}}; save();
+      ui.done = o; ui.dir = 1; render(true); window.scrollTo(0, 0); haptic('success');
+    }, reduce ? 150 : 1150);
+  },
+  again: () => { ui.done = null; go('cabins', true); },
+  serve: el => { const o = state.orders.find(x => x.no === +el.dataset.no); if (!o) return; o.status = 'done'; save();
+    const card = el.closest('.ord'); card.classList.add('done-o'); el.outerHTML = '<span class="served">Выдан</span>';
+    setBig(state.orders.filter(x => x.status === 'new').length); chrome(); toast('Заказ №' + o.no + ' выдан'); },
+  reset: () => { state = seed(); save(); ui.done = null; ui.dir = 1; render(true); toast('Демо сброшено'); },
+};
+document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (el && !el.disabled && ACT[el.dataset.act]) ACT[el.dataset.act](el); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && ui.sheet) closeSheet(); });
+window.addEventListener('hashchange', () => { const t = location.hash.slice(1); if (TABS.includes(t)) go(t); });
+setInterval(() => { if (ui.tab === 'cabins' && !ui.sheet) refreshCabs(); }, 30000);
+
+/* ════════════════════════════════════════════════════════════════════
+   7. ЗАПУСК
+   ════════════════════════════════════════════════════════════════════ */
+if (inTg) {
+  const sw = $('.mode'); sw.hidden = true; let taps = 0, tapT;
+  $('.brand').addEventListener('click', () => { clearTimeout(tapT); tapT = setTimeout(() => taps = 0, 1500);
+    if (++taps >= 5 && sw.hidden) { sw.hidden = false; haptic('success'); toast('Режим кассы открыт'); } });
+}
+const start = location.hash.slice(1);
+if (TABS.includes(start)) ui.tab = start;
+render(true);
+})();
+</script>
+</body>
+</html>
