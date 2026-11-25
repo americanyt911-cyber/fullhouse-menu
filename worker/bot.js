@@ -32,6 +32,7 @@ export class Club extends DurableObject {
   async run(fn) {
     const s = await this.load();
     try {
+      core.sweep(s, catalog, Date.now());
       const out = fn(s, Date.now());
       await this.ctx.storage.put('state', s);
       return { ok: true, ...out };
@@ -41,7 +42,23 @@ export class Club extends DurableObject {
       throw e;
     }
   }
-  async sync(userId) { return core.view(await this.load(), userId, Date.now()); }
+  async sync(userId) {
+    const s = await this.load(), now = Date.now();
+    if (core.sweep(s, catalog, now)) await this.ctx.storage.put('state', s);
+    return core.view(s, userId, now);
+  }
+  book(req, user) {
+    return this.run((s, now) => {
+      const booking = core.book(s, catalog, idx, req, user, now);
+      return { booking, state: core.view(s, user.id, now), admins: s.admins };
+    });
+  }
+  booking(user, action, id, asAdmin) {
+    return this.run((s, now) => {
+      const r = core.bookingAction(s, catalog, idx, user, action, id, now, asAdmin);
+      return { booking: r.b, byGuest: !!r.byGuest, state: core.view(s, user.id, now), admins: s.admins };
+    });
+  }
   order(req, user) {
     return this.run((s, now) => {
       const order = core.placeOrder(s, catalog, idx, req, user, now);
@@ -111,6 +128,28 @@ function orderMessage(o) {
     `\n\nИтого: ${money(o.total)}, оплата на кассе`;
 }
 
+const TZ = catalog.booking.tzMin;
+const bookingLines = (b) => `Кабинка №${b.n} · ${idx.cabins[b.n].gen}\n${core.fmtSpan(b, TZ)} (${b.h} ч)\nСумма: ${money(b.price)}, оплата на кассе`;
+const bookingButtons = (b) => ({ inline_keyboard: [[{ text: 'Подтвердить', callback_data: 'bk:ok:' + b.id }, { text: 'Отклонить', callback_data: 'bk:no:' + b.id }]] });
+
+/** Кому и что написать после действия с бронью. */
+function bookingNotices(env, action, r, actor) {
+  const b = r.booking, out = [], guest = b.byAdmin ? null : b.by.id, others = r.admins.filter((id) => id !== actor.id);
+  if (action === 'new' && b.status === 'pending')
+    r.admins.forEach((id) => out.push(send(env, id, `Заявка на бронь №${b.id}\n${bookingLines(b)}\nГость: ${b.by.name}`, bookingButtons(b))));
+  if (action === 'confirm' && guest)
+    out.push(send(env, guest, `Бронь подтверждена.\n${bookingLines(b)}\n\nПриходите к началу: через ${catalog.booking.graceMin} минут после него бронь снимается.`));
+  if (action === 'decline' && guest)
+    out.push(send(env, guest, `Бронь не подтверждена: кабинка №${b.n}, ${core.fmtSpan(b, TZ)}. Выберите другое время в меню.`, openButton('Открыть меню')));
+  if (action === 'cancel' && r.byGuest)
+    r.admins.forEach((id) => out.push(send(env, id, `Гость ${b.by.name} отменил бронь №${b.id}: кабинка №${b.n}, ${core.fmtSpan(b, TZ)}.`)));
+  if (action === 'cancel' && !r.byGuest && guest)
+    out.push(send(env, guest, `Администратор отменил бронь: кабинка №${b.n}, ${core.fmtSpan(b, TZ)}. Вопросы: +998 90 816 47 37`));
+  if ((action === 'confirm' || action === 'decline') && others.length)
+    others.forEach((id) => out.push(send(env, id, `Бронь №${b.id} ${action === 'confirm' ? 'подтверждена' : 'отклонена'}: ${actor.name || 'сотрудник'}.`)));
+  return Promise.all(out);
+}
+
 async function api(path, request, env, ctx) {
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: 'Неверный запрос.' }, 400); }
@@ -124,6 +163,21 @@ async function api(path, request, env, ctx) {
     if (!r.ok) return json({ error: r.error }, user ? 409 : 401);
     ctx.waitUntil(Promise.all(r.notify.map((id) => send(env, id, orderMessage(r.order), openButton('Открыть кассу')))));
     return json({ order: r.order, state: r.state });
+  }
+
+  if (path === '/api/book') {
+    const r = await c.book({ n: body.n, start: body.start, h: body.h, name: body.name, asAdmin: !!body.asAdmin }, user);
+    if (!r.ok) return json({ error: r.error }, user ? 409 : 401);
+    ctx.waitUntil(bookingNotices(env, 'new', r, user));
+    return json({ booking: r.booking, state: r.state });
+  }
+
+  if (path === '/api/booking') {
+    if (!user) return json({ error: 'Откройте меню через бота.' }, 401);
+    const r = await c.booking(user, body.action, body.id, !!body.asAdmin);
+    if (!r.ok) return json({ error: r.error }, 409);
+    ctx.waitUntil(bookingNotices(env, body.action, r, user));
+    return json(r.state);
   }
 
   if (path === '/api/admin') {
@@ -159,6 +213,17 @@ async function onMessage(msg, env) {
 }
 
 async function onCallback(q, env) {
+  const bk = /^bk:(ok|no):(\d+)$/.exec(q.data || '');
+  if (bk) {                                            // кнопки «Подтвердить / Отклонить» под заявкой на бронь
+    const action = bk[1] === 'ok' ? 'confirm' : 'decline';
+    const actor = { id: q.from.id, name: [q.from.first_name, q.from.last_name].filter(Boolean).join(' ') };
+    const r = await club(env).booking(actor, action, Number(bk[2]), true);
+    await tg(env, 'answerCallbackQuery', { callback_query_id: q.id, text: r.ok ? (action === 'confirm' ? 'Бронь подтверждена' : 'Бронь отклонена') : r.error });
+    if (q.message) await tg(env, 'editMessageReplyMarkup', { chat_id: q.message.chat.id, message_id: q.message.message_id, reply_markup: { inline_keyboard: [] } });
+    if (!r.ok) return;
+    await send(env, q.from.id, `Бронь №${r.booking.id} ${action === 'confirm' ? 'подтверждена. Гостю отправлено сообщение.' : 'отклонена. Гостю отправлено сообщение.'}`);
+    return bookingNotices(env, action, r, actor);
+  }
   const m = /^adm:(ok|no|rm):(\d+)$/.exec(q.data || '');
   if (!m) return tg(env, 'answerCallbackQuery', { callback_query_id: q.id });
   const target = Number(m[2]), allow = m[1] === 'ok';

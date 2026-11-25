@@ -25,6 +25,8 @@ export const itemName = (it) =>
 export function ensureState(state, cat) {
   const s = state || { busy: {}, hookahFree: cat.hookahTotal, flavorsOff: [], stock: {}, orders: [], nextNo: 1, owner: null, admins: [], names: {} };
   [...cat.drinks, ...cat.snacks].forEach((x) => { if (!(x.id in s.stock)) s.stock[x.id] = x.stock === undefined ? null : x.stock; });
+  if (!s.bookings) s.bookings = [];
+  if (!s.nextBk) s.nextBk = 1;
   return s;
 }
 
@@ -35,7 +37,11 @@ export function view(s, userId, now) {
   const busy = {};
   for (const n in s.busy) if (s.busy[n] > now) busy[n] = s.busy[n];
   const admin = isAdmin(s, userId);
-  return { now, busy, hookahFree: s.hookahFree, flavorsOff: s.flavorsOff, stock: s.stock, admin, user: !!userId, orders: admin ? s.orders : [] };
+  const booked = {};                                   // занятые интервалы без имён: их видят все
+  s.bookings.filter(isActive).forEach((b) => (booked[b.n] = booked[b.n] || []).push([b.start, b.end]));
+  const mine = userId ? s.bookings.filter((b) => !b.byAdmin && b.by.id === userId) : [];
+  return { now, busy, hookahFree: s.hookahFree, flavorsOff: s.flavorsOff, stock: s.stock, admin, user: !!userId,
+    orders: admin ? s.orders : [], booked, mine, bookings: admin ? s.bookings : [] };
 }
 
 export function placeOrder(s, cat, idx, req, user, now) {
@@ -53,6 +59,9 @@ export function placeOrder(s, cat, idx, req, user, now) {
     const c = idx.cabins[n], h = int(cabins[n]);
     if (!c || !(h >= 1 && h <= 8)) fail('В заказе неверная кабинка. Обновите меню.');
     if (s.busy[n] > now) fail(`Кабинка №${n} уже занята. Выберите другую.`);
+    const next = s.bookings.filter((b) => isActive(b) && b.n === Number(n) && b.start < now + h * HOUR && b.end > now).sort((a, b) => a.start - b.start)[0];
+    if (next) fail(next.start <= now ? `Кабинка №${n} сейчас забронирована. Выберите другую.`
+      : `Кабинка №${n} забронирована с ${fmtTime(next.start, cat.booking.tzMin)}. Возьмите её на меньшее время или выберите другую.`);
     lines.push([`Кабинка №${n} · ${c.gen}, ${h} ч`, 1, c.price * h]);
     total += c.price * h;
   }
@@ -151,4 +160,86 @@ export function decideAccess(s, ownerId, targetId, allow) {
   s.admins = s.admins.filter((id) => id !== targetId || id === s.owner);
   if (allow && !s.admins.includes(targetId)) s.admins.push(targetId);
   return true;
+}
+
+/* ───────────── Бронь кабинок на время ───────────── */
+const pad = (n) => String(n).padStart(2, '0');
+const DOW = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+/** Время клуба не зависит от часового пояса телефона или сервера. */
+export function fmtTime(ms, tz) { const d = new Date(ms + tz * MIN); return pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); }
+export function fmtDay(ms, tz) { const d = new Date(ms + tz * MIN); return DOW[d.getUTCDay()] + ' ' + pad(d.getUTCDate()) + '.' + pad(d.getUTCMonth() + 1); }
+export const fmtSpan = (b, tz) => `${fmtDay(b.start, tz)}, ${fmtTime(b.start, tz)}–${fmtTime(b.end, tz)}`;
+
+export const isActive = (b) => b.status === 'pending' || b.status === 'confirmed' || b.status === 'arrived';
+
+/** Закрывает брони, срок которых вышел. Возвращает true, если что-то изменилось. */
+export function sweep(s, cat, now) {
+  let changed = false;
+  for (const b of s.bookings) {
+    const was = b.status;
+    if (b.status === 'pending' && now >= b.start) b.status = 'expired';                               // не успели подтвердить
+    else if (b.status === 'confirmed' && now > b.start + cat.booking.graceMin * MIN) b.status = 'noshow'; // гость не пришёл
+    else if (b.status === 'arrived' && now >= b.end) b.status = 'done';
+    if (b.status !== was) changed = true;
+  }
+  const keep = s.bookings.filter((b) => isActive(b) || b.end > now - 24 * HOUR);
+  if (keep.length !== s.bookings.length) { s.bookings = keep; changed = true; }
+  return changed;
+}
+
+// Время занято, если кабинка сейчас занята дольше начала брони или на него уже есть другая бронь.
+const overlaps = (s, n, start, end, now) =>
+  (s.busy[n] > now && s.busy[n] > start) || s.bookings.some((b) => isActive(b) && b.n === n && b.start < end && b.end > start);
+
+export function book(s, cat, idx, req, user, now) {
+  if (!user) fail('Бронь оформляется в Telegram. Откройте меню через бота.');
+  const B = cat.booking, n = int(req.n), start = int(req.start), h = int(req.h);
+  const byAdmin = !!req.asAdmin && isAdmin(s, user.id);
+  const c = idx.cabins[n];
+  if (!c) fail('Такой кабинки нет. Обновите меню.');
+  if (!B.hours.includes(h)) fail('Выберите длительность из списка.');
+  if (!(start > 0) || start % (B.stepMin * MIN) !== 0) fail('Выберите время из списка.');
+  if (start < now + (byAdmin ? 0 : B.leadMin * MIN)) fail('Это время уже прошло. Выберите другое.');
+  if (start > now + B.days * 24 * HOUR) fail(`Бронь открыта на ${B.days} дня вперёд.`);
+  const end = start + h * HOUR;
+  if (overlaps(s, n, start, end, now)) fail('Это время уже занято. Выберите другое.');
+  if (!byAdmin && s.bookings.filter((b) => !b.byAdmin && b.by.id === user.id && (b.status === 'pending' || b.status === 'confirmed')).length >= B.perGuest)
+    fail(`У вас уже ${B.perGuest} брони. Отмените одну из них или дождитесь её окончания.`);
+  const name = byAdmin ? String(req.name || '').trim().slice(0, 40) || 'Гость по телефону' : user.name || 'Гость';
+  const b = { id: s.nextBk++, n, start, end, h, price: c.price * h, status: byAdmin ? 'confirmed' : 'pending', by: { id: user.id, name }, byAdmin, t: now };
+  s.bookings.push(b);
+  return b;
+}
+
+/** confirm / decline / arrive — касса; cancel — касса или сам гость. */
+export function bookingAction(s, cat, idx, user, action, id, now, asAdmin) {
+  if (!user) fail('Откройте меню через бота.');
+  const admin = isAdmin(s, user.id), acting = admin && !!asAdmin;
+  const b = s.bookings.find((x) => x.id === id) || fail('Бронь не найдена.');
+  const own = !b.byAdmin && b.by.id === user.id;
+  if (action === 'cancel') {
+    if (!acting && !own) fail('Это не ваша бронь.');
+    if (!isActive(b) || (!acting && b.status === 'arrived')) fail('Эта бронь уже закрыта.');
+    if (b.status === 'arrived' && s.busy[b.n] === b.end) delete s.busy[b.n];
+    b.status = 'cancelled';
+    return { b, byGuest: !acting };
+  }
+  if (!admin) fail('Нет доступа к кассе.');
+  if (action === 'confirm' || action === 'decline') {
+    if (b.status !== 'pending') fail('Эта заявка уже обработана.');
+    if (action === 'confirm' && now >= b.start) fail('Время этой брони уже прошло.');
+    b.status = action === 'confirm' ? 'confirmed' : 'declined';
+    return { b };
+  }
+  if (action === 'arrive') {
+    if (b.status !== 'confirmed') fail('Отметить приход можно только у подтверждённой брони.');
+    if (now < b.start - 30 * MIN) fail('Отметить приход можно не раньше чем за 30 минут до начала.');
+    b.status = 'arrived';
+    s.busy[b.n] = b.end;
+    const c = idx.cabins[b.n];
+    s.orders.unshift({ no: s.nextNo++, t: now, place: String(b.n), pay: 'cash', status: 'done', total: b.price,
+      lines: [[`Кабинка №${b.n} · ${c.gen}, бронь ${b.h} ч`, 1, b.price]], raw: { items: {}, cabins: {} }, by: { id: b.by.id, name: b.by.name } });
+    return { b };
+  }
+  fail('Неизвестное действие.');
 }

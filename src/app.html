@@ -259,6 +259,16 @@ button.chip:active{transform:scale(.94)}
 .sm:active{transform:scale(.93)}
 .sm.alt{background:rgba(8,7,13,.6);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
 .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.ord.wait{border-color:var(--gold);box-shadow:0 0 16px rgba(230,189,144,.4)}
+.tag.st{border-style:solid;white-space:nowrap}
+.tag.pending{color:var(--gold);border-color:var(--gold)}
+.tag.confirmed,.tag.arrived{color:#7fc0ff;border-color:var(--blue);box-shadow:0 0 8px rgba(var(--blue-a),.45)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:18px;padding:4px;border-radius:16px;background:var(--glass);box-shadow:inset 0 0 0 1px var(--line)}
+.seg button{padding:12px 8px;border-radius:12px;text-align:center;font:500 13.5px/1 var(--f-body);color:var(--muted);transition:background .25s,color .25s,box-shadow .25s}
+.seg button.on{color:#fff;background:rgba(var(--blue-a),.24);box-shadow:inset 0 0 0 1.5px var(--blue),0 0 14px rgba(var(--blue-a),.5)}
+.inp{display:block;width:100%;margin-top:10px;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);background:rgba(8,7,13,.6);color:var(--fg);font:400 16px/1.2 var(--f-body)}
+.inp::placeholder{color:var(--muted)}
+.inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 12px rgba(var(--blue-a),.45)}
 .served{font:500 11px/1 var(--f-display);letter-spacing:.16em;text-transform:uppercase}
 
 /* ───── tab bar ───── */
@@ -399,6 +409,7 @@ function seed() {
     ],
     nextNo: 104,
     cart: {items:{}, cabins:{}},
+    booked: {}, mine: [], bookings: [],
     place: 'hall', pay: 'card',
   };
 }
@@ -443,11 +454,30 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = v => String(v).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 const group = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
 const money = n => group(n) + ' ' + CUR;
-const hhmm = t => { const d = new Date(t); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); };
+/* Время везде показывается по часам клуба, а не телефона. */
+const BK = CATALOG.booking, TZ = BK.tzMin, DAY = 864e5, STEP = BK.stepMin*MIN;
+const pad2 = v => String(v).padStart(2, '0');
+const club = t => new Date(t + TZ*MIN);
+const hhmm = t => { const d = club(t); return pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes()); };
+const DOW = ['вс','пн','вт','ср','чт','пт','сб'];
+const dayStartOf = t => Math.floor((t + TZ*MIN)/DAY)*DAY - TZ*MIN;
+const dayStart = d => dayStartOf(now()) + d*DAY;
+const dayName = t => { const d = Math.round((dayStartOf(t) - dayStart(0))/DAY), c = club(t);
+  return d === 0 ? 'Сегодня' : d === 1 ? 'Завтра' : DOW[c.getUTCDay()] + ' ' + pad2(c.getUTCDate()) + '.' + pad2(c.getUTCMonth() + 1); };
+/* Брони кабинки: [начало, конец] без имён. */
+const spans = n => ((state.booked && state.booked[n]) || []).filter(x => x[1] > now()).sort((a, b) => a[0] - b[0]);
+const held = n => { const x = spans(n).find(x => x[0] <= now()); return x ? x[1] : 0; };      // бронь уже идёт, гостя ждут
+const nextSpan = n => spans(n).find(x => x[0] > now());
+const taken = (n, a, b) => busy(n) > a || spans(n).some(x => x[0] < b && x[1] > a);
+function slotsFor(n, d) {
+  const out = [], a = dayStart(d), min = now() + (ui.mode === 'admin' ? 0 : BK.leadMin*MIN), max = now() + BK.days*24*HOUR;
+  for (let t = a; t < a + DAY; t += STEP) if (t >= min && t <= max && !taken(n, t, t + HOUR)) out.push(t);
+  return out;
+}
 const dur = t => { const m = Math.max(1, Math.round((t - now())/MIN)); return m < 60 ? m + ' мин' : Math.floor(m/60) + ' ч' + (m%60 ? ' ' + (m%60) + ' мин' : ''); };
 const hoursWord = h => h + (h === 1 ? ' час' : h < 5 ? ' часа' : ' часов');
 const busy = n => (state.busy[n] && state.busy[n] > now()) ? state.busy[n] : 0;
-const freeCabs = () => CABINS.filter(c => !busy(c.n)).length;
+const freeCabs = () => CABINS.filter(c => !busy(c.n) && !held(c.n)).length;
 const stockOf = id => ITEMS[id].type === 'hookah' ? state.hookahFree : state.stock[id];
 const cartQ = id => state.cart.items[id] || 0;
 const hookahsInCart = () => HOOKAHS.reduce((s, h) => s + cartQ(h.id), 0);
@@ -523,14 +553,17 @@ const chip = (label, on, act, attrs) => '<button type="button" class="chip' + (o
 
 /* — Кабинки — */
 function cabCard(c, i) {
-  const b = busy(c.n), h = state.cart.cabins[c.n], picked = !b && h && ui.mode === 'guest';
+  const b = busy(c.n), hold = b ? 0 : held(c.n), off = b || hold, nx = off ? null : nextSpan(c.n), soon = nx && nx[0] - now() < 12*HOUR;
+  const h = state.cart.cabins[c.n], picked = !off && h && ui.mode === 'guest';
   const idx = '<b>' + c.n + '</b><i>' + c.gen + '</i>';
   const mid = b ? '<strong>до ' + hhmm(b) + '</strong>ещё ' + dur(b)
+            : hold ? '<strong>до ' + hhmm(hold) + '</strong>забронирована'
             : picked ? '<strong>' + hoursWord(h) + '</strong>в вашем заказе'
+            : soon ? '<strong>до ' + hhmm(nx[0]) + '</strong>потом бронь'
             : (c.vip ? 'VIP · ' : '') + c.tv + ' · ' + c.pads + ' геймпада';
-  return '<button type="button" class="cab' + (b ? ' busy' : '') + (picked ? ' picked' : '') + '" data-act="cab" data-n="' + c.n + '" style="--i:' + i + '"' +
-    ' aria-label="Кабинка ' + c.n + ', ' + c.gen + ', ' + (b ? 'занята до ' + hhmm(b) : 'свободна') + '">' +
-    '<span class="cab-top"><span class="idx">' + idx + '</span><span class="pill' + (b ? '' : ' on') + '">' + (b ? 'Занята' : picked ? 'Выбрана' : 'Свободна') + '</span></span>' +
+  return '<button type="button" class="cab' + (off ? ' busy' : '') + (picked ? ' picked' : '') + '" data-act="cab" data-n="' + c.n + '" style="--i:' + i + '"' +
+    ' aria-label="Кабинка ' + c.n + ', ' + c.gen + ', ' + (b ? 'занята до ' + hhmm(b) : hold ? 'забронирована до ' + hhmm(hold) : 'свободна') + '">' +
+    '<span class="cab-top"><span class="idx">' + idx + '</span><span class="pill' + (off ? '' : ' on') + '">' + (b ? 'Занята' : hold ? 'Бронь' : picked ? 'Выбрана' : 'Свободна') + '</span></span>' +
     '<span class="cab-mid">' + mid + '</span>' +
     '<span class="cab-bot"><span class="price">' + money(c.price) + '<small>/час</small></span><span class="idx rev" aria-hidden="true">' + idx + '</span></span></button>';
 }
@@ -642,10 +675,30 @@ function doneHTML(o) {
     '<ul class="rcpt board">' + o.lines.map(l => '<li><span>' + l[0] + (l[1] > 1 ? ' × ' + l[1] : '') + '</span><span>' + money(l[2]) + '</span></li>').join('') + '</ul>' +
     '<button type="button" class="btn" data-act="again">Вернуться в меню</button></div>';
 }
+/* — Брони — */
+const BK_LABEL = {pending:'Ждёт подтверждения', confirmed:'Подтверждена', arrived:'Гость в кабинке', declined:'Отклонена', cancelled:'Отменена', noshow:'Гость не пришёл', expired:'Не подтверждена вовремя', done:'Завершена'};
+const bkOpen = b => b.status === 'pending' || b.status === 'confirmed' || b.status === 'arrived';
+const sortBk = list => list.filter(b => CAB[b.n]).sort((a, b) => (bkOpen(b) - bkOpen(a)) || (bkOpen(a) ? a.start - b.start : b.start - a.start));
+function bkHTML(b, i, admin) {
+  const btn = (act, label, alt) => '<button type="button" class="sm' + (alt ? ' alt' : '') + '" data-act="bk" data-do="' + act + '" data-id="' + b.id + '">' + label + '</button>';
+  const acts = admin ? (b.status === 'pending' ? btn('decline', 'Отклонить', 1) + btn('confirm', 'Подтвердить')
+                      : b.status === 'confirmed' ? btn('cancel', 'Отменить', 1) + btn('arrive', 'Гость пришёл') : '')
+             : (b.status === 'pending' || b.status === 'confirmed') ? btn('cancel', 'Отменить бронь', 1) : '';
+  const label = !admin && b.status === 'arrived' ? 'Вы в кабинке' : !admin && b.status === 'noshow' ? 'Снята: вы не пришли' : BK_LABEL[b.status];
+  return '<article class="ord' + (bkOpen(b) ? '' : ' done-o') + (b.status === 'pending' ? ' wait' : '') + '" style="--i:' + i + '">' +
+    '<header><b>№' + b.n + ' · ' + CAB[b.n].gen + '</b><em class="tag st ' + b.status + '">' + label + '</em></header>' +
+    '<ul><li><span>' + dayName(b.start) + ', ' + hhmm(b.start) + '–' + hhmm(b.end) + ' · ' + hoursWord(b.h) + '</span></li>' +
+    (admin ? '<li><span>Гость: ' + esc(b.by.name) + (b.byAdmin ? ' · записан кассой' : '') + '</span></li>' : '') + '</ul>' +
+    '<footer><b>' + money(b.price) + '</b>' + (acts ? '<span class="acts">' + acts + '</span>' : '') + '</footer></article>';
+}
 function viewOrderGuest() {
   if (ui.done) return doneHTML(ui.done);
-  const L = cartLines();
-  if (!L.length) return '<div class="vh"><p class="eyebrow">Ваш заказ</p></div><div class="empty"><div class="hand ghost" aria-hidden="true">' +
+  const L = cartLines(), mine = live ? sortBk(state.mine || []) : [];
+  const bks = mine.length ? sec('Мои брони', 2, 0, ' out-board') + mine.map((b, i) => bkHTML(b, i + 1, false)).join('') : '';
+  if (!L.length && bks) return '<div class="vh"><p class="eyebrow">Ваш заказ</p></div>' + bks +
+    '<div class="stack" style="--i:' + (mine.length + 2) + '"><button type="button" class="btn ghost" data-act="go" data-tab="snacks">Добавить снеки и напитки</button>' +
+    '<p class="fine">Заказ к брони можно собрать заранее или уже на месте.</p></div>';
+  if (!L.length) return '<div class="vh"><p class="eyebrow">Ваш заказ</p></div>' + '<div class="empty"><div class="hand ghost" aria-hidden="true">' +
     [0,1,2,3,4].map(k => '<i style="--k:' + k + '"></i>').join('') + '</div><h2>Заказ пуст</h2>' +
     '<p>Добавьте кабинку, кальян, напитки или снеки. Здесь появятся сумма и оплата.</p>' +
     '<button type="button" class="btn" data-act="go" data-tab="cabins">Выбрать кабинку</button></div>';
@@ -657,7 +710,7 @@ function viewOrderGuest() {
     '<p class="note">По QR-коду на столе место подставится само.</p></div>' +
     (live ? '' : '<div class="picker" style="--i:' + (n+2) + '"><h4>Оплата</h4><div class="chips wrap" id="pays">' + pays + '</div></div>') +
     '<div class="stack" style="--i:' + (n+3) + '"><button type="button" class="btn" id="pay" data-act="pay"><span id="pay-label">' + payLabel(total) + '</span></button>' +
-    '<p class="fine">' + (!live ? 'Демо-режим: деньги не списываются.' : me.user ? 'Оплата на кассе при получении. Заказ сразу придёт администратору.' : 'Заказ оформляется в Telegram: откройте меню через бота клуба.') + '</p></div>';
+    '<p class="fine">' + (!live ? 'Демо-режим: деньги не списываются.' : me.user ? 'Оплата на кассе при получении. Заказ сразу придёт администратору.' : 'Заказ оформляется в Telegram: откройте меню через бота клуба.') + '</p></div>' + bks;
 }
 const payLabel = t => (state.pay === 'card' ? 'Оплатить ' : 'Оформить ') + money(t);
 
@@ -670,11 +723,15 @@ function ordHTML(o, i) {
     '<footer><b>' + money(o.total) + '</b>' + (closed ? '<span class="served">' + (o.status === 'cancelled' ? 'Отменён' : 'Выдан') + '</span>'
       : '<span class="acts"><button type="button" class="sm alt" data-act="cancel" data-no="' + o.no + '">Отменить</button><button type="button" class="sm" data-act="serve" data-no="' + o.no + '">Выдать</button></span>') + '</footer></article>';
 }
+const waiting = () => state.orders.filter(o => o.status === 'new').length + (live ? (state.bookings || []).filter(b => b.status === 'pending').length : 0);
 function viewOrderAdmin() {
-  const newN = state.orders.filter(o => o.status === 'new').length, rev = state.orders.reduce((s, o) => s + (o.status === 'cancelled' ? 0 : o.total), 0);
-  return head('Заказы смены', newN, newN === 1 ? 'ждёт выдачи' : 'ждут выдачи',
+  const w = waiting(), rev = state.orders.reduce((s, o) => s + (o.status === 'cancelled' ? 0 : o.total), 0), bks = live ? sortBk(state.bookings || []) : [];
+  const orders = state.orders.length ? state.orders.map(ordHTML).join('') : '<p class="note tail">Заказов пока нет. Новый заказ появится здесь и придёт вам сообщением от бота.</p>';
+  return head(live ? 'Заказы и брони' : 'Заказы смены', w, w === 1 ? 'ждёт ответа' : 'ждут ответа',
     '<p class="note">Выручка смены: <b class="num">' + money(rev) + '</b> · заказов: ' + state.orders.length + '</p>') +
-    (state.orders.length ? state.orders.map(ordHTML).join('') : '<p class="note tail">Заказов пока нет. Новый заказ появится здесь и придёт вам сообщением от бота.</p>') +
+    (live ? sec('Брони', 0, 0, ' out-board') + (bks.length ? bks.map((b, i) => bkHTML(b, i + 1, true)).join('')
+        : '<p class="note tail">Броней нет. Заявка гостя появится здесь и придёт сообщением от бота. Бронь по звонку ставится из карточки кабинки.</p>') + sec('Заказы', 1, bks.length + 2, ' out-board') : '') +
+    orders +
     '<div class="stack" style="--i:' + (state.orders.length + 1) + '"><button type="button" class="btn quiet" data-act="reset">' + (live ? 'Закрыть смену и очистить заказы' : 'Сбросить демо к началу') + '</button></div>';
 }
 
@@ -698,20 +755,49 @@ function chrome() {
   $('#tabs').style.setProperty('--t', TABS.indexOf(ui.tab));
   TABS.forEach(t => $('#tab-' + t).setAttribute('aria-selected', t === ui.tab));
   $('#tab-order-label').textContent = admin ? 'Заказы' : 'Заказ';
-  const n = admin ? state.orders.filter(o => o.status === 'new').length : cartCount(), b = $('#badge');
+  const n = admin ? waiting() : cartCount(), b = $('#badge');
   b.textContent = n; b.classList.toggle('show', n > 0);
 }
 
 /* ════════════════════════════════════════════════════════════════════
    5. ШТОРКА КАБИНКИ
    ════════════════════════════════════════════════════════════════════ */
+function bookHTML() {                                              // выбор дня, времени и длительности брони
+  const sh = ui.sheet, n = sh.n, c = CAB[n], admin = ui.mode === 'admin';
+  let s = '<div class="picker"><h4>День</h4><div class="chips wrap">' + [0,1,2].map(d => chip(dayName(dayStart(d)), sh.day === d, 'bday', 'data-d="' + d + '"')).join('') + '</div></div>';
+  const sl = slotsFor(n, sh.day);
+  if (!sl.includes(sh.start)) sh.start = sl[0] || null;
+  if (!sl.length) return s + '<p class="note">На этот день свободного времени нет. Выберите другой день.</p>';
+  const okH = BK.hours.filter(h => !taken(n, sh.start, sh.start + h*HOUR));
+  if (!okH.includes(sh.bh)) sh.bh = okH[0];
+  const span = dayName(sh.start) + ', ' + hhmm(sh.start) + '–' + hhmm(sh.start + sh.bh*HOUR);
+  s += '<div class="picker"><h4>Начало</h4><div class="chips" id="slots">' + sl.map(t => chip(hhmm(t), t === sh.start, 'bslot', 'data-t="' + t + '"')).join('') + '</div></div>' +
+    '<div class="picker"><h4>На сколько</h4><div class="chips wrap">' + BK.hours.map(h => okH.includes(h) ? chip(hoursWord(h), h === sh.bh, 'bhours', 'data-h="' + h + '"') : '<span class="chip off">' + hoursWord(h) + '</span>').join('') + '</div></div>';
+  if (admin) s += '<div class="picker"><h4>Имя гостя</h4><input class="inp" id="bk-name" type="text" maxlength="40" autocomplete="off" placeholder="Например: Тимур, по телефону" value="' + esc(sh.name || '') + '"></div>';
+  return s + '<div class="stack"><button type="button" class="btn" data-act="bookit">' + (admin ? 'Поставить бронь · ' : 'Отправить заявку · ') + money(c.price*sh.bh) + '</button><p class="fine">' +
+    (admin ? span + '. Бронь от кассы подтверждена сразу.'
+     : !me.user ? 'Бронь оформляется в Telegram: откройте меню через бота клуба.'
+     : span + '. Администратор подтвердит бронь, ответ пришлёт бот. Оплата на кассе. Через ' + BK.graceMin + ' минут после начала бронь снимается.') + '</p></div>';
+}
 function sheetHTML() {
-  const n = ui.sheet.n, c = CAB[n], b = busy(n), admin = ui.mode === 'admin', h = ui.sheet.h, inCart = state.cart.cabins[n];
+  const sh = ui.sheet, n = sh.n, c = CAB[n], b = busy(n), hold = b ? 0 : held(n), nx = nextSpan(n), admin = ui.mode === 'admin', inCart = state.cart.cabins[n];
+  const lim = nx ? Math.floor((nx[0] - now())/HOUR) : 99;                  // сколько часов свободно до ближайшей брони
   const specs = '<dl class="specs"><div><dt>Консоль</dt><dd>' + c.gen + (c.vip ? ' · VIP-комната' : '') + '</dd></div><div><dt>Экран</dt><dd>' + c.tv + '</dd></div>' +
     '<div><dt>Геймпады</dt><dd>' + c.pads + '</dd></div><div><dt>Игры</dt><dd>' + c.games.join(', ') + '</dd></div></dl>';
+  let s = '<h2>Кабинка №' + n + '</h2><p class="state">' + (b ? 'Занята до ' + hhmm(b) + ' · ещё ' + dur(b) : hold ? 'Забронирована до ' + hhmm(hold) : 'Свободна · ' + money(c.price) + ' в час') + '</p>' + specs;
+  if (live) {
+    const sp = spans(n);
+    if (sp.length) s += '<p class="note">Забронировано: ' + sp.map(x => dayName(x[0]).toLowerCase() + ' ' + hhmm(x[0]) + '–' + hhmm(x[1])).join(', ') + '.</p>';
+    const canNow = admin || (!b && !hold && lim >= 1);
+    if (!canNow) sh.mode = 'book';
+    else s += '<div class="seg"><button type="button" class="' + (sh.mode === 'now' ? 'on' : '') + '" data-act="smode" data-m="now">' + (admin ? 'Сейчас' : 'Занять сейчас') + '</button>' +
+      '<button type="button" class="' + (sh.mode === 'book' ? 'on' : '') + '" data-act="smode" data-m="book">Бронь на время</button></div>';
+    if (sh.mode === 'book') return s + bookHTML();
+  }
+  if (!admin && sh.h > lim) sh.h = [5,3,2,1].find(x => x <= lim) || 1;
+  const h = sh.h;
   const hrs = '<div class="picker"><h4>' + (admin ? 'Занять на' : 'На сколько') + '</h4><div class="chips wrap">' +
-    [1,2,3,5].map(x => chip(hoursWord(x), h === x, 'hours', 'data-h="' + x + '"')).join('') + '</div></div>';
-  let s = '<h2>Кабинка №' + n + '</h2><p class="state">' + (b ? 'Занята до ' + hhmm(b) + ' · ещё ' + dur(b) : 'Свободна · ' + money(c.price) + ' в час') + '</p>' + specs;
+    [1,2,3,5].map(x => (!admin && x > lim) ? '<span class="chip off">' + hoursWord(x) + '</span>' : chip(hoursWord(x), h === x, 'hours', 'data-h="' + x + '"')).join('') + '</div></div>';
   if (admin) s += b
     ? '<div class="stack"><button type="button" class="btn" data-act="extend">Продлить на 30 минут</button><button type="button" class="btn ghost" data-act="release">Освободить кабинку</button></div>'
     : hrs + '<div class="stack"><button type="button" class="btn" data-act="occupy">Занять до ' + hhmm(now() + h*HOUR) + '</button></div>';
@@ -721,9 +807,14 @@ function sheetHTML() {
       (inCart ? '<button type="button" class="btn ghost" data-act="unbook">Убрать из заказа</button>' : '') + '</div>';
   return s;
 }
-function openSheet(n) {
-  ui.sheet = {n, h: state.cart.cabins[n] || 1};
+function reSheet() {
   $('#sheet-body').innerHTML = sheetHTML();
+  const row = $('#slots'), on = row && $('.chip.on', row);
+  if (on) row.scrollLeft = on.offsetLeft - row.clientWidth/2 + on.offsetWidth/2;
+}
+function openSheet(n) {
+  ui.sheet = {n, h: state.cart.cabins[n] || 1, mode: 'now', day: 0, start: null, bh: 1, name: ''};
+  reSheet();
   document.body.classList.add('sheet-open');
   const f = $('#sheet .btn'); if (f) setTimeout(() => f.focus({preventScroll:true}), 60);
 }
@@ -762,15 +853,16 @@ async function call(path, body) {
   if (!r.ok) throw new Error(j.error || 'Нет связи с клубом. Попробуйте ещё раз.');
   return j;
 }
-const sigOf = j => JSON.stringify([j.busy, j.hookahFree, j.flavorsOff, j.stock, j.orders, j.admin]);
+const sigOf = j => JSON.stringify([j.busy, j.hookahFree, j.flavorsOff, j.stock, j.orders, j.admin, j.booked, j.mine, j.bookings]);
 function applyServer(j) {
   skew = j.now - Date.now();
   state.busy = j.busy; state.hookahFree = j.hookahFree; state.flavorsOff = j.flavorsOff; state.stock = j.stock; state.orders = j.orders || [];
+  state.booked = j.booked || {}; state.mine = j.mine || []; state.bookings = j.bookings || [];
   me.admin = !!j.admin; me.user = !!j.user;
   for (const id of Object.keys(state.cart.items)) {               // корзина не обещает больше, чем есть
     if (!ITEMS[id]) { delete state.cart.items[id]; continue; }
     const m = maxFor(id); if (state.cart.items[id] > m) { if (m > 0) state.cart.items[id] = m; else delete state.cart.items[id]; } }
-  for (const n of Object.keys(state.cart.cabins)) if (busy(n)) delete state.cart.cabins[n];
+  for (const n of Object.keys(state.cart.cabins)) if (busy(n) || held(n)) delete state.cart.cabins[n];
   save();
 }
 function access() {                                                // переключатель «Касса» видят только сотрудники
@@ -811,7 +903,29 @@ const ACT = {
   cat: el => { ui.cat[ui.tab] = el.dataset.c; ui.dir = 1; render(false); const s = $('#shelf'); $('#view').classList.add('anim'); void s.offsetWidth; },
   cab: el => openSheet(+el.dataset.n),
   close: closeSheet,
-  hours: el => { ui.sheet.h = +el.dataset.h; $('#sheet-body').innerHTML = sheetHTML(); },
+  hours: el => { ui.sheet.h = +el.dataset.h; reSheet(); },
+  smode: el => { ui.sheet.mode = el.dataset.m; reSheet(); },
+  bday: el => { ui.sheet.day = +el.dataset.d; ui.sheet.start = null; reSheet(); },
+  bslot: el => { ui.sheet.start = +el.dataset.t; reSheet(); },
+  bhours: el => { ui.sheet.bh = +el.dataset.h; reSheet(); },
+  bookit: el => {                                                  // гость отправляет заявку, касса ставит бронь сразу
+    const sh = ui.sheet, admin = ui.mode === 'admin'; if (!sh || !sh.start) return;
+    el.classList.add('busy'); el.disabled = true; ++mutSeq;
+    call('/api/book', {n: sh.n, start: sh.start, h: sh.bh, name: sh.name || '', asAdmin: admin}).then(j => {
+      applyServer(j.state); lastSig = sigOf(j.state); closeSheet(); haptic('success');
+      toast(admin ? 'Бронь поставлена' : 'Заявка отправлена. Ответ пришлёт бот');
+      if (admin) { refreshCabs(sh.n); chrome(); } else go('order', true);
+    }).catch(e => { toast(e.message); ++mutSeq; lastSig = ''; sync().then(() => { if (ui.sheet) reSheet(); }); });
+  },
+  bk: el => {                                                      // действия с бронью из списка
+    const act = el.dataset.do, id = +el.dataset.id;
+    if ((act === 'cancel' || act === 'decline') && !sure(el, 'Точно?')) return;
+    el.disabled = true; ++mutSeq;
+    call('/api/booking', {action: act, id, asAdmin: ui.mode === 'admin'}).then(j => {
+      applyServer(j); lastSig = sigOf(j); render(false); haptic('medium');
+      toast({confirm:'Бронь подтверждена, гостю написал бот', decline:'Бронь отклонена, гостю написал бот', cancel:'Бронь отменена', arrive:'Гость отмечен, кабинка занята'}[act]);
+    }).catch(e => { toast(e.message); ++mutSeq; lastSig = ''; sync(); });
+  },
   book: () => { const n = ui.sheet.n, isNew = !state.cart.cabins[n]; state.cart.cabins[n] = ui.sheet.h;
     if (state.place === 'hall') state.place = String(n);
     save(); closeSheet(); refreshCabs(n); chrome(); haptic('medium');
@@ -869,7 +983,7 @@ const ACT = {
   again: () => { ui.done = null; go('cabins', true); },
   serve: el => { const o = state.orders.find(x => x.no === +el.dataset.no); if (!o) return; o.status = 'done'; save(); push('serve', {no: o.no});
     const card = el.closest('.ord'); card.classList.add('done-o'); el.closest('.acts').outerHTML = '<span class="served">Выдан</span>';
-    setBig(state.orders.filter(x => x.status === 'new').length); chrome(); toast('Заказ №' + o.no + ' выдан'); },
+    setBig(waiting()); chrome(); toast('Заказ №' + o.no + ' выдан'); },
   cancel: el => { if (!sure(el, 'Точно отменить?')) return;
     const o = state.orders.find(x => x.no === +el.dataset.no); if (!o || o.status !== 'new') return;
     if (o.raw) {                                                   // вернуть товар и освободить кабинки
@@ -883,6 +997,7 @@ const ACT = {
     state = seed(); save(); ui.done = null; ui.dir = 1; render(true); toast('Демо сброшено'); },
 };
 document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (el && !el.disabled && ACT[el.dataset.act]) ACT[el.dataset.act](el); });
+document.addEventListener('input', e => { if (e.target.id === 'bk-name' && ui.sheet) ui.sheet.name = e.target.value; });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ui.sheet) closeSheet(); });
 window.addEventListener('hashchange', () => { const t = location.hash.slice(1); if (TABS.includes(t)) go(t); });
 setInterval(() => { if (ui.tab === 'cabins' && !ui.sheet) refreshCabs(); }, 30000);

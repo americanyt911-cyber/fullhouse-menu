@@ -1,5 +1,6 @@
 {
   "currency": "сум",
+  "booking": {"stepMin":30,"hours":[1,2,3,5],"days":3,"graceMin":15,"leadMin":5,"perGuest":2,"tzMin":300},
   "cabins": [
     {"n":1,"gen":"PS5","vip":true,"price":50000,"tv":"65″ 4K","pads":4,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},
     {"n":2,"gen":"PS5","vip":false,"price":40000,"tv":"55″ 4K","pads":2,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},
