@@ -6,7 +6,7 @@
     {"n":3,"gen":"PS3","color":"чёрная","price":40000,"games":["PES 2013","PES 2019","Mortal Kombat Komplete Edition","GTA 5","FIFA 19","Far Cry 3","Blur","Minecraft"]},
     {"n":4,"gen":"PS4","price":50000,"games":["EA FC 26","UFC 4","eFootball","Mortal Kombat 11","GTA 5","Rocket League","Trackmania"]},
     {"n":5,"gen":"PS4","price":50000,"games":["EA FC 26","UFC 4","eFootball","Mortal Kombat 11","GTA 5","Rocket League","Trackmania","Starlit Kart Racing"]},
-    {"n":6,"gen":"PS5","color":"белая","price":60000},
+    {"n":6,"gen":"PS5","color":"белая","price":60000,"games":["GTA 6","Rocket League","eFootball","Once Human"]},
     {"n":7,"gen":"PS5","color":"белая","price":60000}
   ],
   "hookahTotal": 6,
