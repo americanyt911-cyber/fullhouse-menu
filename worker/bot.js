@@ -19,7 +19,7 @@ const WELCOME =
   'Добро пожаловать в Full House — smoke & play.\n\n' +
   'В меню видно, какие кабинки PlayStation свободны и сколько они стоят, какие кальяны, напитки и снеки есть в наличии. ' +
   'Там же можно собрать заказ.\n\n' +
-  'Администратор: +998 90 816 47 37';
+  'Администратор: +998 77 265 32 77';
 const HINT = 'Меню открывается кнопкой ниже.';
 const openButton = (text) => ({ inline_keyboard: [[{ text, web_app: { url: APP_URL } }]] });
 
@@ -144,7 +144,7 @@ function bookingNotices(env, action, r, actor) {
   if (action === 'cancel' && r.byGuest)
     r.admins.forEach((id) => out.push(send(env, id, `Гость ${b.by.name} отменил бронь №${b.id}: кабинка №${b.n}, ${core.fmtSpan(b, TZ)}.`)));
   if (action === 'cancel' && !r.byGuest && guest)
-    out.push(send(env, guest, `Администратор отменил бронь: кабинка №${b.n}, ${core.fmtSpan(b, TZ)}. Вопросы: +998 90 816 47 37`));
+    out.push(send(env, guest, `Администратор отменил бронь: кабинка №${b.n}, ${core.fmtSpan(b, TZ)}. Вопросы: +998 77 265 32 77`));
   if ((action === 'confirm' || action === 'decline') && others.length)
     others.forEach((id) => out.push(send(env, id, `Бронь №${b.id} ${action === 'confirm' ? 'подтверждена' : 'отклонена'}: ${actor.name || 'сотрудник'}.`)));
   return Promise.all(out);
