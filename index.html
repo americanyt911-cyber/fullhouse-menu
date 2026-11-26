@@ -206,6 +206,11 @@ button.chip:active{transform:scale(.94)}
 
 /* rules */
 .rules{padding:2px 14px 14px}
+.promo{padding-bottom:14px;border-color:rgba(230,189,144,.5);box-shadow:0 0 18px rgba(230,189,144,.14)}
+.promo .rb{min-height:0}
+.promo .row:last-of-type{border-bottom:0}
+.promo .price{color:var(--gold)}
+.promo .note{margin-top:4px;max-width:none}
 .rules li{position:relative;padding:6px 0 6px 18px;font-size:13.5px;color:var(--fg)}
 .rules li::before{content:"";position:absolute;left:2px;top:13px;width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red)}
 .rules li:nth-child(even)::before{background:var(--blue);box-shadow:0 0 8px var(--blue)}
@@ -384,7 +389,7 @@ button.chip:active{transform:scale(.94)}
       Цены, остатки и состав — примеры для демо, замените на свои.
    ════════════════════════════════════════════════════════════════════ */
 /* Меню лежит в catalog.json: его читают и эта страница, и сервер. Сборка (build.py) подставляет его сюда. */
-const CATALOG = {"currency":"сум","booking":{"stepMin":30,"hours":[1,2,3,5],"days":3,"graceMin":15,"leadMin":5,"perGuest":2,"tzMin":300},"cabins":[{"n":1,"gen":"PS5","vip":true,"price":50000,"tv":"65″ 4K","pads":4,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},{"n":2,"gen":"PS5","vip":false,"price":40000,"tv":"55″ 4K","pads":2,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},{"n":3,"gen":"PS4","vip":false,"price":25000,"tv":"50″","pads":2,"games":["FIFA 23","Mortal Kombat 11","Tekken 7","GTA V"]},{"n":4,"gen":"PS4","vip":false,"price":25000,"tv":"50″","pads":2,"games":["FIFA 23","Mortal Kombat 11","Tekken 7","GTA V"]},{"n":5,"gen":"PS4","vip":false,"price":25000,"tv":"43″","pads":2,"games":["FIFA 23","Mortal Kombat 11","UFC 4","GTA V"]},{"n":6,"gen":"PS4","vip":false,"price":25000,"tv":"43″","pads":2,"games":["FIFA 23","Mortal Kombat 11","UFC 4","GTA V"]},{"n":7,"gen":"PS3","vip":false,"price":15000,"tv":"40″","pads":2,"games":["PES 2013","Mortal Kombat 9","Tekken Tag 2","GTA V"]},{"n":8,"gen":"PS3","vip":false,"price":15000,"tv":"40″","pads":2,"games":["PES 2013","Mortal Kombat 9","Tekken Tag 2","GTA V"]}],"hookahTotal":6,"hookahs":[{"id":"h1","name":"Классический","desc":"Глиняная чаша, один вкус или микс","price":80000,"str":2},{"id":"h2","name":"На грейпфруте","desc":"Фруктовая чаша, свежий и кислый","price":110000,"str":2},{"id":"h3","name":"На ананасе","desc":"Большая фруктовая чаша на компанию","price":140000,"str":1},{"id":"h4","name":"Premium","desc":"Тёмные табаки, плотный дым","price":130000,"str":3},{"id":"h5","name":"Безникотиновый","desc":"Чайная смесь, вкус на выбор","price":80000,"str":0}],"tobacco":["MustHave","Spectrum","Северный"],"flavors":["Двойное яблоко","Мята","Арбуз","Дыня","Черника","Виноград","Персик","Манго","Лимон-лайм","Вишня"],"drinks":[{"id":"d1","cat":"Газировка","name":"Coca-Cola","unit":["0,5","л"],"price":12000,"stock":24,"cap":30},{"id":"d2","cat":"Газировка","name":"Fanta","unit":["0,5","л"],"price":12000,"stock":11,"cap":30},{"id":"d3","cat":"Газировка","name":"Sprite","unit":["0,5","л"],"price":12000,"stock":3,"cap":30},{"id":"d4","cat":"Газировка","name":"Coca-Cola","unit":["1","л"],"price":18000,"stock":8,"cap":12},{"id":"d5","cat":"Энергетики","name":"Red Bull","unit":["0,25","л"],"price":30000,"stock":9,"cap":24},{"id":"d6","cat":"Энергетики","name":"Adrenaline Rush","unit":["0,45","л"],"price":22000,"stock":0,"cap":24},{"id":"d7","cat":"Энергетики","name":"Burn","unit":["0,45","л"],"price":20000,"stock":6,"cap":24},{"id":"d8","cat":"Вода и соки","name":"Вода без газа","unit":["0,5","л"],"price":5000,"stock":40,"cap":48},{"id":"d9","cat":"Вода и соки","name":"Вода с газом","unit":["0,5","л"],"price":5000,"stock":17,"cap":48},{"id":"d10","cat":"Вода и соки","name":"Сок яблочный","unit":["0,33","л"],"price":10000,"stock":5,"cap":20},{"id":"d11","cat":"Вода и соки","name":"Холодный чай","unit":["0,5","л"],"price":12000,"stock":2,"cap":20},{"id":"d12","cat":"Горячее","name":"Чай чёрный","unit":["0,8","л"],"price":20000,"stock":null},{"id":"d13","cat":"Горячее","name":"Чай зелёный","unit":["0,8","л"],"price":20000,"stock":null},{"id":"d14","cat":"Горячее","name":"Американо","unit":["200","мл"],"price":15000,"stock":null}],"snacks":[{"id":"s1","cat":"Сеты","name":"Сет 1","desc":"Курт, сырные палочки, сушки, кешью","price":100000,"stock":null},{"id":"s2","cat":"Сеты","name":"Сет 2","desc":"Курт, сырные палочки, чипсы, кешью, семечки","price":125000,"stock":null},{"id":"s3","cat":"Сеты","name":"Сет 3","desc":"Чипсы, курт, семечки","price":75000,"stock":null},{"id":"s4","cat":"Снеки","name":"Чипсы Lays","price":20000,"stock":12,"cap":20},{"id":"s5","cat":"Снеки","name":"Чипсы Pringles","price":40000,"stock":6,"cap":12},{"id":"s6","cat":"Снеки","name":"Курт Ermak","price":15000,"stock":9,"cap":20},{"id":"s7","cat":"Снеки","name":"Курт","price":15000,"stock":14,"cap":20},{"id":"s8","cat":"Снеки","name":"Сырные палочки","price":20000,"stock":4,"cap":15},{"id":"s9","cat":"Снеки","name":"Кешью","price":20000,"stock":7,"cap":15},{"id":"s10","cat":"Снеки","name":"Сушки","price":15000,"stock":10,"cap":15},{"id":"s11","cat":"Снеки","name":"Семечки","unit":["150","гр"],"price":25000,"stock":8,"cap":20},{"id":"s12","cat":"Снеки","name":"Семечки","unit":["100","гр"],"price":20000,"stock":2,"cap":20},{"id":"s13","cat":"Снеки","name":"Кириешки","price":15000,"stock":18,"cap":30},{"id":"s14","cat":"Снеки","name":"Гренки","price":15000,"stock":0,"cap":15}]};
+const CATALOG = {"currency":"сум","booking":{"stepMin":30,"hours":[1,2,3,5],"days":3,"graceMin":15,"leadMin":5,"perGuest":2,"tzMin":300},"cabins":[{"n":1,"gen":"PS5","vip":true,"price":50000,"tv":"65″ 4K","pads":4,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},{"n":2,"gen":"PS5","vip":false,"price":40000,"tv":"55″ 4K","pads":2,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},{"n":3,"gen":"PS4","vip":false,"price":25000,"tv":"50″","pads":2,"games":["FIFA 23","Mortal Kombat 11","Tekken 7","GTA V"]},{"n":4,"gen":"PS4","vip":false,"price":25000,"tv":"50″","pads":2,"games":["FIFA 23","Mortal Kombat 11","Tekken 7","GTA V"]},{"n":5,"gen":"PS4","vip":false,"price":25000,"tv":"43″","pads":2,"games":["FIFA 23","Mortal Kombat 11","UFC 4","GTA V"]},{"n":6,"gen":"PS4","vip":false,"price":25000,"tv":"43″","pads":2,"games":["FIFA 23","Mortal Kombat 11","UFC 4","GTA V"]},{"n":7,"gen":"PS3","vip":false,"price":15000,"tv":"40″","pads":2,"games":["PES 2013","Mortal Kombat 9","Tekken Tag 2","GTA V"]},{"n":8,"gen":"PS3","vip":false,"price":15000,"tv":"40″","pads":2,"games":["PES 2013","Mortal Kombat 9","Tekken Tag 2","GTA V"]}],"hookahTotal":6,"hookahs":[{"id":"h1","name":"Классический","desc":"Глиняная чаша, один вкус или микс","price":80000,"str":2},{"id":"h2","name":"На грейпфруте","desc":"Фруктовая чаша, свежий и кислый","price":110000,"str":2},{"id":"h3","name":"На ананасе","desc":"Большая фруктовая чаша на компанию","price":140000,"str":1},{"id":"h4","name":"Premium","desc":"Тёмные табаки, плотный дым","price":130000,"str":3},{"id":"h5","name":"Безникотиновый","desc":"Чайная смесь, вкус на выбор","price":80000,"str":0}],"tobacco":["MustHave","Spectrum","Северный"],"flavors":["Двойное яблоко","Мята","Арбуз","Дыня","Черника","Виноград","Персик","Манго","Лимон-лайм","Вишня"],"drinks":[{"id":"d21","cat":"Газировка","name":"Coca-Cola","unit":["0,5","л"],"price":12800,"stock":10,"cap":20,"demo":14},{"id":"d22","cat":"Газировка","name":"Fanta","unit":["0,5","л"],"price":12800,"stock":10,"cap":20,"demo":3},{"id":"d23","cat":"Газировка","name":"Coca-Cola","unit":["1","л"],"price":20000,"stock":10,"cap":20},{"id":"d24","cat":"Энергетики","name":"Adrenaline","price":25000,"stock":10,"cap":20,"demo":6},{"id":"d25","cat":"Энергетики","name":"Gorilla","price":20000,"stock":10,"cap":20,"demo":0},{"id":"d26","cat":"Энергетики","name":"18+","price":20000,"stock":10,"cap":20},{"id":"d27","cat":"Вода и соки","name":"Вода без газа","price":5000,"stock":20,"cap":40},{"id":"d28","cat":"Вода и соки","name":"Вода с газом","price":5000,"stock":20,"cap":40},{"id":"d29","cat":"Вода и соки","name":"Сок яблочный","price":25600,"stock":10,"cap":20},{"id":"d30","cat":"Вода и соки","name":"Сок ягодный","price":25600,"stock":10,"cap":20,"demo":2},{"id":"d31","cat":"Вода и соки","name":"Сок мультифрукт","price":25600,"stock":10,"cap":20},{"id":"d32","cat":"Горячее","name":"Чай чёрный","price":15000,"stock":null},{"id":"d33","cat":"Горячее","name":"Чай зелёный","price":15000,"stock":null},{"id":"d34","cat":"Горячее","name":"Чай с лимоном","price":20000,"stock":null},{"id":"d35","cat":"Горячее","name":"Американо","price":15000,"stock":null},{"id":"d36","cat":"Горячее","name":"Эспрессо","price":10000,"stock":null}],"snacks":[{"id":"s21","cat":"Сеты","name":"Сет 1","price":120000,"stock":null,"desc":"Гренки, чипсы, сырные палочки, курт"},{"id":"s22","cat":"Сеты","name":"Сет 2","price":110500,"stock":null,"desc":"Козинаки, гренки, чипсы"},{"id":"s23","cat":"Снеки","name":"Чипсы Lays средние","price":20200,"stock":10,"cap":20,"demo":12},{"id":"s24","cat":"Снеки","name":"Чипсы Lays большие","price":40000,"stock":10,"cap":20,"demo":4},{"id":"s25","cat":"Снеки","name":"Pringles","price":30000,"stock":10,"cap":20,"demo":6},{"id":"s26","cat":"Снеки","name":"Курт ассорти","price":38500,"stock":10,"cap":20},{"id":"s27","cat":"Снеки","name":"Семечки","unit":["250","гр"],"price":35000,"stock":10,"cap":20,"demo":2},{"id":"s28","cat":"Снеки","name":"Гренки","unit":["100","гр"],"price":20000,"stock":10,"cap":20,"demo":0}],"promos":{"bonus":[{"name":"Днём, 10:00–18:00","gift":"+1 час"},{"name":"Ночью, 22:00–06:00","gift":"+1 час"}],"set":{"name":"Акция-сет","price":300000,"desc":"Кальян, два хот-дога «Классик», Coca-Cola 1 л и час бесплатно"},"terms":"Бонусный час действует в кабинке. Если кабинка не нужна, из общей суммы он не вычитается."}};
 const API = "https://fullhouse-bot.the-last-city.workers.dev";                       // адрес сервера клуба; пусто = демо без сервера
 const CUR = CATALOG.currency, CABINS = CATALOG.cabins, HOOKAH_TOTAL = CATALOG.hookahTotal, HOOKAHS = CATALOG.hookahs,
       TOBACCO = CATALOG.tobacco, FLAVORS = CATALOG.flavors, DRINKS = CATALOG.drinks, SNACKS = CATALOG.snacks;
@@ -400,11 +405,11 @@ const TABS = ['cabins','hookah','drinks','snacks','order'];
    2. ХРАНИЛИЩЕ. В демо состояние живёт в браузере.
       В боевой версии load/save заменяются запросами к API кассы.
    ════════════════════════════════════════════════════════════════════ */
-const KEY = 'fullhouse-kassa-v2';
+const KEY = 'fullhouse-kassa-v3';
 const HOUR = 36e5, MIN = 6e4;
 function seed() {
   const now = Date.now(), stock = {};
-  [...DRINKS, ...SNACKS].forEach(x => stock[x.id] = x.stock);
+  [...DRINKS, ...SNACKS].forEach(x => stock[x.id] = x.demo !== undefined ? x.demo : x.stock);   // demo: остатки только для показа без сервера
   return {
     t: now,
     busy: {1: now + 50*MIN, 3: now + 25*MIN, 6: now + 95*MIN},
@@ -412,10 +417,10 @@ function seed() {
     flavorsOff: ['Персик','Вишня'],
     stock,
     orders: [
-      {no:103, t: now - 12*MIN, place:'3', pay:'card', total:104000, status:'new', ex:true,
-       lines:[['Кальян «Классический»',1,80000],['Coca-Cola 0,5 л',2,24000]]},
-      {no:102, t: now - 41*MIN, place:'hall', pay:'cash', total:95000, status:'done', ex:true,
-       lines:[['Сет 3',1,75000],['Чипсы Lays',1,20000]]},
+      {no:103, t: now - 12*MIN, place:'3', pay:'card', total:105600, status:'new', ex:true,
+       lines:[['Кальян «Классический»',1,80000],['Coca-Cola 0,5 л',2,25600]]},
+      {no:102, t: now - 41*MIN, place:'hall', pay:'cash', total:130700, status:'done', ex:true,
+       lines:[['Сет 2',1,110500],['Чипсы Lays средние',1,20200]]},
     ],
     nextNo: 104,
     cart: {items:{}, cabins:{}},
@@ -561,6 +566,16 @@ const head = (eyebrow, num, label, extra, moneyNum, art) =>
   (moneyNum ? money(num) : group(num)) + '</b><span>' + label + '</span></div>' + (extra || '') + '</div>';
 const chip = (label, on, act, attrs) => '<button type="button" class="chip' + (on ? ' on' : '') + '" data-act="' + act + '" ' + attrs + '>' + label + '</button>';
 
+/* — Акции — */
+function promoHTML(i) {
+  const P = CATALOG.promos; if (!P) return '';
+  const line = (name, right, desc) => '<article class="row"><div class="rl"><h3>' + name + '</h3><i class="dots" aria-hidden="true"></i><span class="price">' + right + '</span></div>' +
+    (desc ? '<div class="rb"><div class="st"><p class="sub">(' + desc + ')</p></div></div>' : '') + '</article>';
+  return '<section class="board promo" style="--i:' + i + '">' + sec('Акции', 3, 0) +
+    P.bonus.map(b => line(b.name, b.gift)).join('') + (P.set ? line(P.set.name, money(P.set.price), P.set.desc) : '') +
+    (P.terms ? '<p class="note">' + P.terms + (P.set ? ' Акцию-сет оформляет администратор.' : '') + '</p>' : '') + '</section>';
+}
+
 /* — Кабинки — */
 function cabCard(c, i) {
   const b = busy(c.n), hold = b ? 0 : held(c.n), off = b || hold, nx = off ? null : nextSpan(c.n), soon = nx && nx[0] - now() < 12*HOUR;
@@ -582,8 +597,8 @@ function viewCabins() {
   const gens = ['all','PS5','PS4','PS3'];
   const chips = '<div class="chips" id="cab-chips">' + gens.map(g => chip(g === 'all' ? 'Все ' + CABINS.length : g + ' · ' + CABINS.filter(c => c.gen === g).length,
     ui.cabFilter === g, 'cabf', 'data-g="' + g + '"')).join('') + '</div>';
-  return head('Кабинки PlayStation', freeCabs(), 'из ' + CABINS.length + ' свободно', chips, false, 'ps') + '<div class="deck" id="deck">' + deckHTML() + '</div>' +
-    '<section class="board rules" style="--i:9">' + sec('Правила клуба', 1, 0) +
+  return head('Кабинки PlayStation', freeCabs(), 'из ' + CABINS.length + ' свободно', chips, false, 'ps') + '<div class="deck" id="deck">' + deckHTML() + '</div>' + promoHTML(9) +
+    '<section class="board rules" style="--i:10">' + sec('Правила клуба', 1, 0) +
     '<ul><li>Гостям младше 18 лет вход после 22:00 закрыт. До 22:00 для них действует скидка 10%.</li><li>Свою еду и напитки приносить нельзя.</li></ul>' +
     '<p class="tel">Администратор: <b>+998 90 816 47 37</b></p></section>';
 }
@@ -666,7 +681,7 @@ function viewShelf(type) {
     list.filter(x => x.cat === c).forEach(x => body += rowHTML(ITEMS[x.id], i++));
   });
   return head(type === 'drinks' ? 'Напитки' : 'Закуски и снеки', units, 'шт. в наличии',
-    '<p class="note" id="shelf-note">' + list.length + ' позиций в меню' + (outN ? ', закончилось: ' + outN : '') + '.</p>' + chips, false, 'hk') + '<div class="board" id="shelf">' + body + '</div>';
+    '<p class="note" id="shelf-note">' + list.length + ' позиций в меню' + (outN ? ', закончилось: ' + outN : '') + '.</p>' + chips, false, 'hk') + '<div class="board" id="shelf">' + body + '</div>' + (type === 'snacks' ? promoHTML(i + 1) : '');
 }
 const shelfUnits = type => (type === 'drinks' ? DRINKS : SNACKS).reduce((s, x) => s + (state.stock[x.id] || 0), 0);
 

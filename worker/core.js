@@ -25,6 +25,8 @@ export const itemName = (it) =>
 export function ensureState(state, cat) {
   const s = state || { busy: {}, hookahFree: cat.hookahTotal, flavorsOff: [], stock: {}, orders: [], nextNo: 1, owner: null, admins: [], names: {} };
   [...cat.drinks, ...cat.snacks].forEach((x) => { if (!(x.id in s.stock)) s.stock[x.id] = x.stock === undefined ? null : x.stock; });
+  const known = new Set([...cat.drinks, ...cat.snacks].map((x) => x.id));
+  for (const id of Object.keys(s.stock)) if (!known.has(id)) delete s.stock[id];   // позиции убрали из меню
   if (!s.bookings) s.bookings = [];
   if (!s.nextBk) s.nextBk = 1;
   return s;

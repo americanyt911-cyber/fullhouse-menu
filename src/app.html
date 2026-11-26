@@ -197,6 +197,11 @@ button.chip:active{transform:scale(.94)}
 
 /* rules */
 .rules{padding:2px 14px 14px}
+.promo{padding-bottom:14px;border-color:rgba(230,189,144,.5);box-shadow:0 0 18px rgba(230,189,144,.14)}
+.promo .rb{min-height:0}
+.promo .row:last-of-type{border-bottom:0}
+.promo .price{color:var(--gold)}
+.promo .note{margin-top:4px;max-width:none}
 .rules li{position:relative;padding:6px 0 6px 18px;font-size:13.5px;color:var(--fg)}
 .rules li::before{content:"";position:absolute;left:2px;top:13px;width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red)}
 .rules li:nth-child(even)::before{background:var(--blue);box-shadow:0 0 8px var(--blue)}
@@ -390,11 +395,11 @@ const TABS = ['cabins','hookah','drinks','snacks','order'];
    2. ХРАНИЛИЩЕ. В демо состояние живёт в браузере.
       В боевой версии load/save заменяются запросами к API кассы.
    ════════════════════════════════════════════════════════════════════ */
-const KEY = 'fullhouse-kassa-v2';
+const KEY = 'fullhouse-kassa-v3';
 const HOUR = 36e5, MIN = 6e4;
 function seed() {
   const now = Date.now(), stock = {};
-  [...DRINKS, ...SNACKS].forEach(x => stock[x.id] = x.stock);
+  [...DRINKS, ...SNACKS].forEach(x => stock[x.id] = x.demo !== undefined ? x.demo : x.stock);   // demo: остатки только для показа без сервера
   return {
     t: now,
     busy: {1: now + 50*MIN, 3: now + 25*MIN, 6: now + 95*MIN},
@@ -402,10 +407,10 @@ function seed() {
     flavorsOff: ['Персик','Вишня'],
     stock,
     orders: [
-      {no:103, t: now - 12*MIN, place:'3', pay:'card', total:104000, status:'new', ex:true,
-       lines:[['Кальян «Классический»',1,80000],['Coca-Cola 0,5 л',2,24000]]},
-      {no:102, t: now - 41*MIN, place:'hall', pay:'cash', total:95000, status:'done', ex:true,
-       lines:[['Сет 3',1,75000],['Чипсы Lays',1,20000]]},
+      {no:103, t: now - 12*MIN, place:'3', pay:'card', total:105600, status:'new', ex:true,
+       lines:[['Кальян «Классический»',1,80000],['Coca-Cola 0,5 л',2,25600]]},
+      {no:102, t: now - 41*MIN, place:'hall', pay:'cash', total:130700, status:'done', ex:true,
+       lines:[['Сет 2',1,110500],['Чипсы Lays средние',1,20200]]},
     ],
     nextNo: 104,
     cart: {items:{}, cabins:{}},
@@ -551,6 +556,16 @@ const head = (eyebrow, num, label, extra, moneyNum, art) =>
   (moneyNum ? money(num) : group(num)) + '</b><span>' + label + '</span></div>' + (extra || '') + '</div>';
 const chip = (label, on, act, attrs) => '<button type="button" class="chip' + (on ? ' on' : '') + '" data-act="' + act + '" ' + attrs + '>' + label + '</button>';
 
+/* — Акции — */
+function promoHTML(i) {
+  const P = CATALOG.promos; if (!P) return '';
+  const line = (name, right, desc) => '<article class="row"><div class="rl"><h3>' + name + '</h3><i class="dots" aria-hidden="true"></i><span class="price">' + right + '</span></div>' +
+    (desc ? '<div class="rb"><div class="st"><p class="sub">(' + desc + ')</p></div></div>' : '') + '</article>';
+  return '<section class="board promo" style="--i:' + i + '">' + sec('Акции', 3, 0) +
+    P.bonus.map(b => line(b.name, b.gift)).join('') + (P.set ? line(P.set.name, money(P.set.price), P.set.desc) : '') +
+    (P.terms ? '<p class="note">' + P.terms + (P.set ? ' Акцию-сет оформляет администратор.' : '') + '</p>' : '') + '</section>';
+}
+
 /* — Кабинки — */
 function cabCard(c, i) {
   const b = busy(c.n), hold = b ? 0 : held(c.n), off = b || hold, nx = off ? null : nextSpan(c.n), soon = nx && nx[0] - now() < 12*HOUR;
@@ -572,8 +587,8 @@ function viewCabins() {
   const gens = ['all','PS5','PS4','PS3'];
   const chips = '<div class="chips" id="cab-chips">' + gens.map(g => chip(g === 'all' ? 'Все ' + CABINS.length : g + ' · ' + CABINS.filter(c => c.gen === g).length,
     ui.cabFilter === g, 'cabf', 'data-g="' + g + '"')).join('') + '</div>';
-  return head('Кабинки PlayStation', freeCabs(), 'из ' + CABINS.length + ' свободно', chips, false, 'ps') + '<div class="deck" id="deck">' + deckHTML() + '</div>' +
-    '<section class="board rules" style="--i:9">' + sec('Правила клуба', 1, 0) +
+  return head('Кабинки PlayStation', freeCabs(), 'из ' + CABINS.length + ' свободно', chips, false, 'ps') + '<div class="deck" id="deck">' + deckHTML() + '</div>' + promoHTML(9) +
+    '<section class="board rules" style="--i:10">' + sec('Правила клуба', 1, 0) +
     '<ul><li>Гостям младше 18 лет вход после 22:00 закрыт. До 22:00 для них действует скидка 10%.</li><li>Свою еду и напитки приносить нельзя.</li></ul>' +
     '<p class="tel">Администратор: <b>+998 90 816 47 37</b></p></section>';
 }
@@ -656,7 +671,7 @@ function viewShelf(type) {
     list.filter(x => x.cat === c).forEach(x => body += rowHTML(ITEMS[x.id], i++));
   });
   return head(type === 'drinks' ? 'Напитки' : 'Закуски и снеки', units, 'шт. в наличии',
-    '<p class="note" id="shelf-note">' + list.length + ' позиций в меню' + (outN ? ', закончилось: ' + outN : '') + '.</p>' + chips, false, 'hk') + '<div class="board" id="shelf">' + body + '</div>';
+    '<p class="note" id="shelf-note">' + list.length + ' позиций в меню' + (outN ? ', закончилось: ' + outN : '') + '.</p>' + chips, false, 'hk') + '<div class="board" id="shelf">' + body + '</div>' + (type === 'snacks' ? promoHTML(i + 1) : '');
 }
 const shelfUnits = type => (type === 'drinks' ? DRINKS : SNACKS).reduce((s, x) => s + (state.stock[x.id] || 0), 0);
 
