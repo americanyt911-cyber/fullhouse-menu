@@ -395,7 +395,7 @@ const TABS = ['cabins','hookah','drinks','snacks','order'];
    2. ХРАНИЛИЩЕ. В демо состояние живёт в браузере.
       В боевой версии load/save заменяются запросами к API кассы.
    ════════════════════════════════════════════════════════════════════ */
-const KEY = 'fullhouse-kassa-v3';
+const KEY = 'fullhouse-kassa-v4';
 const HOUR = 36e5, MIN = 6e4;
 function seed() {
   const now = Date.now(), stock = {};
@@ -404,11 +404,11 @@ function seed() {
     t: now,
     busy: {1: now + 50*MIN, 3: now + 25*MIN, 6: now + 95*MIN},
     hookahFree: 4,
-    flavorsOff: ['Персик','Вишня'],
+    flavorsOff: [],
     stock,
     orders: [
-      {no:103, t: now - 12*MIN, place:'3', pay:'card', total:105600, status:'new', ex:true,
-       lines:[['Кальян «Классический»',1,80000],['Coca-Cola 0,5 л',2,25600]]},
+      {no:103, t: now - 12*MIN, place:'3', pay:'card', total:175600, status:'new', ex:true,
+       lines:[['Кальян «Средний»',1,150000],['Coca-Cola 0,5 л',2,25600]]},
       {no:102, t: now - 41*MIN, place:'hall', pay:'cash', total:130700, status:'done', ex:true,
        lines:[['Сет 2',1,110500],['Чипсы Lays средние',1,20200]]},
     ],
@@ -567,6 +567,7 @@ function promoHTML(i) {
 }
 
 /* — Кабинки — */
+const cabNote = c => [c.vip ? 'VIP' : '', c.color ? c.color[0].toUpperCase() + c.color.slice(1) + ' консоль' : '', c.tv || '', c.pads ? c.pads + ' геймпада' : ''].filter(Boolean).join(' · ');
 function cabCard(c, i) {
   const b = busy(c.n), hold = b ? 0 : held(c.n), off = b || hold, nx = off ? null : nextSpan(c.n), soon = nx && nx[0] - now() < 12*HOUR;
   const h = state.cart.cabins[c.n], picked = !off && h && ui.mode === 'guest';
@@ -575,7 +576,7 @@ function cabCard(c, i) {
             : hold ? '<strong>до ' + hhmm(hold) + '</strong>забронирована'
             : picked ? '<strong>' + hoursWord(h) + '</strong>в вашем заказе'
             : soon ? '<strong>до ' + hhmm(nx[0]) + '</strong>потом бронь'
-            : (c.vip ? 'VIP · ' : '') + c.tv + ' · ' + c.pads + ' геймпада';
+            : cabNote(c);
   return '<button type="button" class="cab' + (off ? ' busy' : '') + (picked ? ' picked' : '') + '" data-act="cab" data-n="' + c.n + '" style="--i:' + i + '"' +
     ' aria-label="Кабинка ' + c.n + ', ' + c.gen + ', ' + (b ? 'занята до ' + hhmm(b) : hold ? 'забронирована до ' + hhmm(hold) : 'свободна') + '">' +
     '<span class="cab-top"><span class="idx">' + idx + '</span><span class="pill' + (off ? '' : ' on') + '">' + (b ? 'Занята' : hold ? 'Бронь' : picked ? 'Выбрана' : 'Свободна') + '</span></span>' +
@@ -602,7 +603,7 @@ function refreshCabs(flipN, redeal) {
 /* — Строка товара — */
 function stockHTML(it) {
   const desc = it.desc ? '<p class="sub">' + (it.type === 'hookah' ? it.desc : '(' + it.desc + ')') + '</p>' : '';
-  if (it.type === 'hookah') return desc + '<div class="stock"><span class="str s' + it.str + '"><i></i><i></i><i></i></span><span class="left">' + STRENGTH[it.str] + '</span></div>';
+  if (it.type === 'hookah') return desc + '<div class="stock"><span class="str s' + it.str + '"><i></i><i></i><i></i></span><span class="left">' + (it.name === STRENGTH[it.str] ? 'Крепость ' + it.str + ' из 3' : STRENGTH[it.str]) + '</span></div>';
   const st = state.stock[it.id];
   if (st === null) return desc + '<div class="stock"><span class="left">' + (it.cat === 'Сеты' ? 'Собираем при заказе' : 'Готовим при заказе') + '</span></div>';
   if (st === 0) return desc + '<div class="stock"><span class="left none">Закончилось</span></div>';
@@ -656,8 +657,8 @@ function viewHookah() {
   return head('Кальяны', state.hookahFree, 'из ' + HOOKAH_TOTAL + ' свободно', extra, false, 'hk') +
     '<div class="board">' + sec('Premium Hookah', 0, 0) + HOOKAHS.map((h, i) => rowHTML(ITEMS[h.id], i + 1)).join('') + '</div>' +
     sec('Табак', 1, 7, ' out-board') + '<div class="chips wrap flav" style="--i:8;margin-top:6px">' + brands + '</div>' +
-    sec('Вкусы сегодня', 2, 9, ' out-board') + '<div class="chips wrap flav" style="--i:10;margin-top:6px">' + fl + '</div>' +
-    '<p class="note tail" style="--i:11">' + (admin ? 'Нажмите на вкус, чтобы убрать его из наличия или вернуть.' : 'Зачёркнутые вкусы закончились. Микс соберёт кальянщик.') + ' 18+. Курение вредит вашему здоровью.</p>';
+    (FLAVORS.length ? sec('Вкусы сегодня', 2, 9, ' out-board') + '<div class="chips wrap flav" style="--i:10;margin-top:6px">' + fl + '</div>' : '') +
+    '<p class="note tail" style="--i:11">' + (!FLAVORS.length ? 'Вкус подберёт кальянщик.' : admin ? 'Нажмите на вкус, чтобы убрать его из наличия или вернуть.' : 'Зачёркнутые вкусы закончились. Микс соберёт кальянщик.') + ' 18+. Курение вредит вашему здоровью.</p>';
 }
 
 /* — Напитки и снеки — */
@@ -797,8 +798,9 @@ function bookHTML() {                                              // выбор
 function sheetHTML() {
   const sh = ui.sheet, n = sh.n, c = CAB[n], b = busy(n), hold = b ? 0 : held(n), nx = nextSpan(n), admin = ui.mode === 'admin', inCart = state.cart.cabins[n];
   const lim = nx ? Math.floor((nx[0] - now())/HOUR) : 99;                  // сколько часов свободно до ближайшей брони
-  const specs = '<dl class="specs"><div><dt>Консоль</dt><dd>' + c.gen + (c.vip ? ' · VIP-комната' : '') + '</dd></div><div><dt>Экран</dt><dd>' + c.tv + '</dd></div>' +
-    '<div><dt>Геймпады</dt><dd>' + c.pads + '</dd></div><div><dt>Игры</dt><dd>' + c.games.join(', ') + '</dd></div></dl>';
+  const spec = (k, v) => v ? '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>' : '';
+  const specs = '<dl class="specs">' + spec('Консоль', c.gen + (c.color ? ' · ' + c.color : '') + (c.vip ? ' · VIP-комната' : '')) + spec('Цена', money(c.price) + ' в час') +
+    spec('Экран', c.tv) + spec('Геймпады', c.pads) + spec('Игры', c.games && c.games.join(', ')) + '</dl>';
   let s = '<h2>Кабинка №' + n + '</h2><p class="state">' + (b ? 'Занята до ' + hhmm(b) + ' · ещё ' + dur(b) : hold ? 'Забронирована до ' + hhmm(hold) : 'Свободна · ' + money(c.price) + ' в час') + '</p>' + specs;
   if (live) {
     const sp = spans(n);

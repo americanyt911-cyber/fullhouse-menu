@@ -2,25 +2,21 @@
   "currency": "сум",
   "booking": {"stepMin": 30, "hours": [1, 2, 3, 5], "days": 3, "graceMin": 15, "leadMin": 5, "perGuest": 2, "tzMin": 300},
   "cabins": [
-    {"n":1,"gen":"PS5","vip":true,"price":50000,"tv":"65″ 4K","pads":4,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},
-    {"n":2,"gen":"PS5","vip":false,"price":40000,"tv":"55″ 4K","pads":2,"games":["EA FC 26","Mortal Kombat 1","UFC 5","GTA V"]},
-    {"n":3,"gen":"PS4","vip":false,"price":25000,"tv":"50″","pads":2,"games":["FIFA 23","Mortal Kombat 11","Tekken 7","GTA V"]},
-    {"n":4,"gen":"PS4","vip":false,"price":25000,"tv":"50″","pads":2,"games":["FIFA 23","Mortal Kombat 11","Tekken 7","GTA V"]},
-    {"n":5,"gen":"PS4","vip":false,"price":25000,"tv":"43″","pads":2,"games":["FIFA 23","Mortal Kombat 11","UFC 4","GTA V"]},
-    {"n":6,"gen":"PS4","vip":false,"price":25000,"tv":"43″","pads":2,"games":["FIFA 23","Mortal Kombat 11","UFC 4","GTA V"]},
-    {"n":7,"gen":"PS3","vip":false,"price":15000,"tv":"40″","pads":2,"games":["PES 2013","Mortal Kombat 9","Tekken Tag 2","GTA V"]},
-    {"n":8,"gen":"PS3","vip":false,"price":15000,"tv":"40″","pads":2,"games":["PES 2013","Mortal Kombat 9","Tekken Tag 2","GTA V"]}
+    {"n":1,"gen":"PS5","color":"белая","price":60000},
+    {"n":2,"gen":"PS5","color":"белая","price":60000},
+    {"n":3,"gen":"PS4","color":"белая","price":50000},
+    {"n":4,"gen":"PS4","color":"чёрная","price":50000},
+    {"n":5,"gen":"PS3","color":"чёрная","price":40000},
+    {"n":6,"gen":"PS3","color":"чёрная","price":40000}
   ],
   "hookahTotal": 6,
   "hookahs": [
-    {"id":"h1","name":"Классический","desc":"Глиняная чаша, один вкус или микс","price":80000,"str":2},
-    {"id":"h2","name":"На грейпфруте","desc":"Фруктовая чаша, свежий и кислый","price":110000,"str":2},
-    {"id":"h3","name":"На ананасе","desc":"Большая фруктовая чаша на компанию","price":140000,"str":1},
-    {"id":"h4","name":"Premium","desc":"Тёмные табаки, плотный дым","price":130000,"str":3},
-    {"id":"h5","name":"Безникотиновый","desc":"Чайная смесь, вкус на выбор","price":80000,"str":0}
+    {"id":"h11","name":"Лёгкий","price":150000,"str":1},
+    {"id":"h12","name":"Средний","price":150000,"str":2},
+    {"id":"h13","name":"Крепкий","price":150000,"str":3}
   ],
   "tobacco": ["MustHave", "Spectrum", "Северный"],
-  "flavors": ["Двойное яблоко", "Мята", "Арбуз", "Дыня", "Черника", "Виноград", "Персик", "Манго", "Лимон-лайм", "Вишня"],
+  "flavors": [],
   "drinks": [
     {"id":"d21","cat":"Газировка","name":"Coca-Cola","unit":["0,5","л"],"price":12800,"stock":10,"cap":20,"demo":14},
     {"id":"d22","cat":"Газировка","name":"Fanta","unit":["0,5","л"],"price":12800,"stock":10,"cap":20,"demo":3},
