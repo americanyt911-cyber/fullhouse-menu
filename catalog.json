@@ -3,7 +3,7 @@
   "booking": {"stepMin": 30, "hours": [1, 2, 3, 5], "days": 3, "graceMin": 15, "leadMin": 5, "perGuest": 2, "tzMin": 300},
   "cabins": [
     {"n":2,"gen":"PS3","color":"чёрная","price":40000,"games":["PES 2013","PES 2019","Mortal Kombat Komplete Edition","GTA 5","FIFA 19","Far Cry 4","Blur","Minecraft"]},
-    {"n":3,"gen":"PS3","color":"чёрная","price":40000},
+    {"n":3,"gen":"PS3","color":"чёрная","price":40000,"games":["PES 2013","PES 2019","Mortal Kombat Komplete Edition","GTA 5","FIFA 19","Far Cry 3","Blur","Minecraft"]},
     {"n":4,"gen":"PS4","price":50000},
     {"n":5,"gen":"PS4","price":50000},
     {"n":6,"gen":"PS5","color":"белая","price":60000},
