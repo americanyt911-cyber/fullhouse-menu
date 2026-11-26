@@ -404,14 +404,14 @@ const TABS = ['cabins','hookah','drinks','snacks','order'];
    2. ХРАНИЛИЩЕ. В демо состояние живёт в браузере.
       В боевой версии load/save заменяются запросами к API кассы.
    ════════════════════════════════════════════════════════════════════ */
-const KEY = 'fullhouse-kassa-v5';
+const KEY = 'fullhouse-kassa-v6';
 const HOUR = 36e5, MIN = 6e4;
 function seed() {
   const now = Date.now(), stock = {};
   [...DRINKS, ...SNACKS].forEach(x => stock[x.id] = x.demo !== undefined ? x.demo : x.stock);   // demo: остатки только для показа без сервера
   return {
     t: now,
-    busy: {1: now + 50*MIN, 3: now + 25*MIN, 6: now + 95*MIN},
+    busy: {2: now + 50*MIN, 4: now + 25*MIN, 7: now + 95*MIN},
     hookahFree: 4,
     flavorsOff: [],
     stock,
@@ -594,7 +594,7 @@ function cabCard(c, i) {
 }
 const deckHTML = () => CABINS.filter(c => ui.cabFilter === 'all' || c.gen === ui.cabFilter).map(cabCard).join('');
 function viewCabins() {
-  const gens = ['all','PS5','PS4','PS3'];
+  const gens = ['all'].concat([...new Set(CABINS.map(c => c.gen))]);
   const chips = '<div class="chips" id="cab-chips">' + gens.map(g => chip(g === 'all' ? 'Все ' + CABINS.length : g + ' · ' + CABINS.filter(c => c.gen === g).length,
     ui.cabFilter === g, 'cabf', 'data-g="' + g + '"')).join('') + '</div>';
   return head('Кабинки PlayStation', freeCabs(), 'из ' + CABINS.length + ' свободно', chips, false, 'ps') + '<div class="deck" id="deck">' + deckHTML() + '</div>' + promoHTML(9) +
