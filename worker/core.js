@@ -27,6 +27,7 @@ export function ensureState(state, cat) {
   [...cat.drinks, ...cat.snacks].forEach((x) => { if (!(x.id in s.stock)) s.stock[x.id] = x.stock === undefined ? null : x.stock; });
   const known = new Set([...cat.drinks, ...cat.snacks].map((x) => x.id));
   for (const id of Object.keys(s.stock)) if (!known.has(id)) delete s.stock[id];   // позиции убрали из меню
+  s.flavorsOff = s.flavorsOff.filter((id) => cat.flavors.some((f) => f.id === id));   // вкусы, которых больше нет в меню
   if (!s.bookings) s.bookings = [];
   if (!s.nextBk) s.nextBk = 1;
   return s;
@@ -109,7 +110,7 @@ export function adminAction(s, cat, idx, userId, action, p, now) {
       s.hookahFree = Math.max(0, Math.min(cat.hookahTotal, s.hookahFree + p.d));
       break;
     case 'flavor': {
-      if (!cat.flavors.includes(p.f)) fail('Такого вкуса нет в меню.');
+      if (!cat.flavors.some((f) => f.id === p.f)) fail('Такого вкуса нет в меню.');
       const i = s.flavorsOff.indexOf(p.f);
       if (i >= 0) s.flavorsOff.splice(i, 1); else s.flavorsOff.push(p.f);
       break;

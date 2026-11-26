@@ -15,8 +15,21 @@
     {"id":"h12","name":"Средний","price":150000,"str":2},
     {"id":"h13","name":"Крепкий","price":150000,"str":3}
   ],
-  "tobacco": ["MustHave", "Spectrum", "Северный"],
-  "flavors": [],
+  "flavors": [
+    {"id":"f1","brand":"Serbetli","name":"Grapefruit","taste":"Грейпфрут","tags":["Цитрус"],"str":1,"cool":false},
+    {"id":"f2","brand":"Serbetli","name":"Banana Strawberry","taste":"Банан, клубника","tags":["Фрукты","Ягоды"],"str":1,"cool":false},
+    {"id":"f3","brand":"Serbetli","name":"Blueberry Grapefruit Melon","taste":"Черника, грейпфрут, дыня","tags":["Ягоды","Цитрус","Фрукты"],"str":1,"cool":false},
+    {"id":"f4","brand":"Serbetli","name":"Ice Watermelon Melon","taste":"Арбуз, дыня, лёд","tags":["Фрукты"],"str":1,"cool":true},
+    {"id":"f5","brand":"MustHave","name":"Pinkman","taste":"Грейпфрут, клубника, малина","tags":["Ягоды","Цитрус"],"str":2,"cool":false},
+    {"id":"f6","brand":"MustHave","name":"Barberry Candy","taste":"Барбарисовые конфеты","tags":["Сладкое"],"str":2,"cool":false},
+    {"id":"f7","brand":"MustHave","name":"Coconut Shake","taste":"Кокосовый коктейль","tags":["Сладкое"],"str":2,"cool":false},
+    {"id":"f8","brand":"MustHave","name":"Frosty","taste":"Чистый холодок, добавка к любому вкусу","tags":["Свежесть"],"str":2,"cool":true},
+    {"id":"f9","brand":"Serbetli Hard Line","name":"Banana Kiwi Strawberry","taste":"Банан, киви, клубника","tags":["Фрукты","Ягоды"],"str":3,"cool":false},
+    {"id":"f10","brand":"Darkside","name":"Крымский Shot","taste":"Дыня, персик, виноград","tags":["Фрукты"],"str":3,"cool":false},
+    {"id":"f11","brand":"Darkside","name":"Red Alert","taste":"Дыня","tags":["Фрукты"],"str":3,"cool":false},
+    {"id":"f12","brand":"Darkside","name":"Bounty Hunter","taste":"Кокос, шоколад","tags":["Сладкое"],"str":3,"cool":false},
+    {"id":"f13","brand":"Sebero Black","name":"Gumishka","taste":"Мармеладные мишки","tags":["Сладкое"],"str":3,"cool":false}
+  ],
   "drinks": [
     {"id":"d21","cat":"Газировка","name":"Coca-Cola","unit":["0,5","л"],"price":12800,"stock":10,"cap":20,"demo":14},
     {"id":"d22","cat":"Газировка","name":"Fanta","unit":["0,5","л"],"price":12800,"stock":10,"cap":20,"demo":3},

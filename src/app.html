@@ -84,7 +84,16 @@ ul{list-style:none}
 button.chip:active{transform:scale(.94)}
 .chip.on{background:rgba(var(--blue-a),.22);border-color:var(--blue);color:#fff;box-shadow:0 0 14px rgba(var(--blue-a),.55),inset 0 0 10px rgba(var(--blue-a),.25)}
 .chip.off{color:var(--muted);text-decoration:line-through;border-style:dashed}
-.chip.brand-c{border-color:rgba(230,189,144,.45);color:var(--gold)}
+.flt{display:grid;gap:2px;margin-top:4px}
+.flt .chips{margin-top:0;align-items:center}
+.flt-l{flex:none;width:74px;font:500 11px/1 var(--f-display);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.brand{font:500 13px/1.2 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+.row.fl .stock{flex-wrap:wrap;margin-top:5px}
+.row.fl .rb{align-items:flex-end}
+.row.fl.off h3,.row.fl.off .sub,.row.fl.off .brand{opacity:.4}
+.row.fl.off h3{text-decoration:line-through}
+.left.ice{color:#8cc7ff;box-shadow:inset 0 0 0 1.5px var(--blue),0 0 8px rgba(var(--blue-a),.45);padding:5px 8px;border-radius:99px}
+.board>.row.fl:last-child{border-bottom:0}
 
 /* head art */
 .art{position:absolute;right:0;top:10px;pointer-events:none}
@@ -382,7 +391,7 @@ button.chip:active{transform:scale(.94)}
 const CATALOG = /*__CATALOG__*/null;
 const API = /*__API__*/'';                       // адрес сервера клуба; пусто = демо без сервера
 const CUR = CATALOG.currency, CABINS = CATALOG.cabins, HOOKAH_TOTAL = CATALOG.hookahTotal, HOOKAHS = CATALOG.hookahs,
-      TOBACCO = CATALOG.tobacco, FLAVORS = CATALOG.flavors, DRINKS = CATALOG.drinks, SNACKS = CATALOG.snacks;
+      FLAVORS = CATALOG.flavors, DRINKS = CATALOG.drinks, SNACKS = CATALOG.snacks;
 const STRENGTH = ['Без никотина','Лёгкий','Средний','Крепкий'];
 const ITEMS = {};
 HOOKAHS.forEach(x => ITEMS[x.id] = {...x, type:'hookah'});
@@ -395,7 +404,7 @@ const TABS = ['cabins','hookah','drinks','snacks','order'];
    2. ХРАНИЛИЩЕ. В демо состояние живёт в браузере.
       В боевой версии load/save заменяются запросами к API кассы.
    ════════════════════════════════════════════════════════════════════ */
-const KEY = 'fullhouse-kassa-v4';
+const KEY = 'fullhouse-kassa-v5';
 const HOUR = 36e5, MIN = 6e4;
 function seed() {
   const now = Date.now(), stock = {};
@@ -432,7 +441,7 @@ let state = load();
 let live = false, skew = 0, mutSeq = 0, lastSig = '';
 const me = {admin:false, user:false};
 const now = () => Date.now() + skew;
-const ui = {tab:'cabins', mode:'guest', dir:1, cabFilter:'all', cat:{drinks:'all', snacks:'all'}, done:null, sheet:null};
+const ui = {tab:'cabins', mode:'guest', dir:1, cabFilter:'all', cat:{drinks:'all', snacks:'all'}, fl:{str:0, cool:'all', tag:'all'}, done:null, sheet:null};
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* Telegram Mini App. Скрипт telegram-web-app.js подключается в сборке для хостинга (build.py).
@@ -650,16 +659,33 @@ function viewHookah() {
   if (admin) extra += '<div class="adm-step"><span>Свободно кальянов</span><div class="qty adm" data-q="' + state.hookahFree + '">' +
     '<button type="button" class="minus" data-act="hk" data-d="-1" aria-label="Меньше">−</button><span class="n" id="hk-n">' + state.hookahFree + '</span>' +
     '<button type="button" class="plus" data-act="hk" data-d="1" aria-label="Больше">+</button></div></div>';
-  const fl = FLAVORS.map(f => { const off = state.flavorsOff.includes(f);
-    return admin ? '<button type="button" class="chip' + (off ? ' off' : '') + '" data-act="flav" data-f="' + f + '" aria-pressed="' + !off + '">' + f + '</button>'
-                 : '<span class="chip' + (off ? ' off' : '') + '">' + f + '</span>'; }).join('');
-  const brands = TOBACCO.map(t => '<span class="chip brand-c">' + t + '</span>').join('');
   return head('Кальяны', state.hookahFree, 'из ' + HOOKAH_TOTAL + ' свободно', extra, false, 'hk') +
     '<div class="board">' + sec('Premium Hookah', 0, 0) + HOOKAHS.map((h, i) => rowHTML(ITEMS[h.id], i + 1)).join('') + '</div>' +
-    sec('Табак', 1, 7, ' out-board') + '<div class="chips wrap flav" style="--i:8;margin-top:6px">' + brands + '</div>' +
-    (FLAVORS.length ? sec('Вкусы сегодня', 2, 9, ' out-board') + '<div class="chips wrap flav" style="--i:10;margin-top:6px">' + fl + '</div>' : '') +
-    '<p class="note tail" style="--i:11">' + (!FLAVORS.length ? 'Вкус подберёт кальянщик.' : admin ? 'Нажмите на вкус, чтобы убрать его из наличия или вернуть.' : 'Зачёркнутые вкусы закончились. Микс соберёт кальянщик.') + ' 18+. Курение вредит вашему здоровью.</p>';
+    (FLAVORS.length ? sec('Вкусы', 2, 6, ' out-board') + '<div class="flt flav" id="flt" style="--i:7">' + filtersHTML() + '</div>' +
+      '<p class="note flav" id="fl-count" style="--i:8">' + flCount() + '</p><div class="board" id="flavors" style="--i:9">' + flavorsHTML() + '</div>' : '') +
+    '<p class="note tail" style="--i:11">' + (!FLAVORS.length ? 'Вкус подберёт кальянщик. ' : admin ? 'Кнопка справа убирает вкус из наличия или возвращает его. ' : 'Назовите вкусы кальянщику, он соберёт микс. ') + 'Кальян подаём гостям старше 21 года. Курение вредит вашему здоровью.</p>';
 }
+/* Вкусы и фильтр: крепость табака, холодок, вкус. */
+const FL_TAGS = [...new Set(FLAVORS.reduce((a, f) => a.concat(f.tags), []))];
+const flShown = () => FLAVORS.filter(f => (!ui.fl.str || f.str === ui.fl.str) && (ui.fl.cool === 'all' || f.cool === (ui.fl.cool === 'yes')) && (ui.fl.tag === 'all' || f.tags.includes(ui.fl.tag)));
+const flCount = () => { const n = flShown().length, off = flShown().filter(f => state.flavorsOff.includes(f.id)).length;
+  return n ? 'Показано вкусов: ' + n + ' из ' + FLAVORS.length + (off ? ', закончилось: ' + off : '') + '.' : ''; };
+function filtersHTML() {
+  const row = (label, key, opts) => '<div class="chips"><span class="flt-l">' + label + '</span>' + opts.map(o => chip(o[1], String(ui.fl[key]) === String(o[0]), 'flt', 'data-k="' + key + '" data-v="' + o[0] + '"')).join('') + '</div>';
+  return row('Крепость', 'str', [[0, 'Любая'], [1, 'Лёгкий'], [2, 'Средний'], [3, 'Крепкий']]) +
+    row('Холодок', 'cool', [['all', 'Не важно'], ['yes', 'С холодком'], ['no', 'Без холодка']]) +
+    row('Вкус', 'tag', [['all', 'Любой']].concat(FL_TAGS.map(t => [t, t])));
+}
+function flavorsHTML() {
+  const admin = ui.mode === 'admin', list = flShown();
+  if (!list.length) return '<p class="note" style="padding:14px 0 12px;margin:0">Под такой фильтр вкусов нет. Снимите один из фильтров.</p>';
+  return list.map((f, i) => { const off = state.flavorsOff.includes(f.id);
+    return '<article class="row fl' + (off ? ' off' : '') + '" style="--i:' + i + '"><div class="rl"><h3>' + f.name + '</h3><i class="dots" aria-hidden="true"></i><span class="brand">' + f.brand + '</span></div>' +
+      '<div class="rb"><div class="st"><p class="sub">' + f.taste + '</p><div class="stock"><span class="str s' + f.str + '"><i></i><i></i><i></i></span><span class="left">' + STRENGTH[f.str] + '</span>' +
+      (f.cool ? '<span class="left ice">Холодок</span>' : '') + (off ? '<span class="left none">Закончился</span>' : '') + '</div></div>' +
+      (admin ? '<button type="button" class="sm' + (off ? '' : ' alt') + '" data-act="flav" data-f="' + f.id + '">' + (off ? 'Вернуть' : 'Убрать') + '</button>' : '') + '</div></article>'; }).join('');
+}
+function reFlavors() { const b = $('#flavors'); if (!b) return; b.innerHTML = flavorsHTML(); $('#fl-count').textContent = flCount(); }
 
 /* — Напитки и снеки — */
 function viewShelf(type) {
@@ -892,7 +918,8 @@ function soft() {                                                  // тихо �
   if (ui.sheet || ui.paying) { chrome(); return; }
   if (ui.tab === 'cabins') refreshCabs();
   else if (ui.tab === 'drinks' || ui.tab === 'snacks') { patchRows(); setBig(shelfUnits(ui.tab)); }
-  else if (ui.tab === 'hookah' || !ui.done) render(false);
+  else if (ui.tab === 'hookah') { patchRows(); const p = $('#pips'); if (p) p.innerHTML = pipsHTML(); setBig(state.hookahFree); reFlavors(); }
+  else if (!ui.done) render(false);
   chrome();
 }
 async function sync() {
@@ -972,7 +999,9 @@ const ACT = {
   hk: el => { const d = +el.dataset.d, v = Math.max(0, Math.min(HOOKAH_TOTAL, state.hookahFree + d)); if (v === state.hookahFree) return;
     state.hookahFree = v; save(); push('hookah', {d}); roll($('#hk-n'), v, d); $('#hk-n').parentNode.dataset.q = v; $('#pips').innerHTML = pipsHTML(); setBig(v); },
   flav: el => { const f = el.dataset.f, i = state.flavorsOff.indexOf(f); if (i >= 0) state.flavorsOff.splice(i, 1); else state.flavorsOff.push(f);
-    save(); push('flavor', {f}); el.classList.toggle('off', i < 0); el.setAttribute('aria-pressed', i >= 0); },
+    save(); push('flavor', {f}); reFlavors(); },
+  flt: el => { const k = el.dataset.k, v = el.dataset.v; ui.fl[k] = k === 'str' ? +v : v;
+    $$('#flt .chip[data-k="' + k + '"]').forEach(c => c.classList.toggle('on', c === el)); reFlavors(); haptic('light'); },
   place: el => { state.place = el.dataset.p; save(); $$('#places .chip').forEach(c => c.classList.toggle('on', c === el)); },
   payby: el => { state.pay = el.dataset.p; save(); $$('#pays .chip').forEach(c => c.classList.toggle('on', c === el)); $('#pay-label').textContent = payLabel(cartTotal()); },
   pay: el => {
