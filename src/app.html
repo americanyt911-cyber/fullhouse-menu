@@ -18,7 +18,6 @@
   --f-sign:'Fredoka','Arial Rounded MT Bold','Trebuchet MS',sans-serif;
   --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.56,.64,1);
   --gl:max(16px,env(safe-area-inset-left,0px)); --gr:max(16px,env(safe-area-inset-right,0px));
-  --smoke:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='520'%3E%3Cfilter id='s' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.006 .014' numOctaves='4' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.7 0 0 0 -.72'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)' opacity='.34'/%3E%3C/svg%3E");
   --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E");
 }
 html,body{height:100%}
@@ -29,7 +28,13 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 h1,h2,h3,h4,p,ul,dl,dd{margin:0;padding:0}
 ul{list-style:none}
 :focus-visible{outline:2px solid var(--fg);outline-offset:3px;border-radius:6px}
-#fog{position:fixed;inset:0;width:100%;height:100%;z-index:0;opacity:.62;pointer-events:none}
+#fog{position:fixed;inset:0;width:100%;height:100%;z-index:0;opacity:.42;pointer-events:none}
+/* Неоновый контур лица и пар изо рта: фон всего приложения. */
+#face{position:fixed;right:-14%;top:40%;height:54%;aspect-ratio:3/4;z-index:0;opacity:.85;pointer-events:none;transform:rotate(30deg);transform-origin:60% 60%;fill:none;stroke-linecap:round;stroke-linejoin:round}
+#face .glow{stroke:var(--blue);stroke-width:7;opacity:.5;filter:blur(6px)}
+#face .core{stroke:#bfe0ff;stroke-width:2.2;filter:drop-shadow(0 0 3px var(--blue)) drop-shadow(0 0 10px var(--blue));animation:tube 7s steps(1,end) infinite}
+@keyframes tube{0%,100%{opacity:1}61%{opacity:1}62%{opacity:.55}63%{opacity:1}65%{opacity:.7}66%{opacity:1}}
+#smoke{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
 .app{max-width:520px;margin:0 auto;min-height:100%;position:relative;z-index:1}
 .gut{padding-left:var(--gl);padding-right:var(--gr)}
 .num{font-family:var(--f-display);font-variant-numeric:tabular-nums}
@@ -131,7 +136,11 @@ button.chip:active{transform:scale(.94)}
 .cab-top,.cab-bot{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
 .cab-bot{align-items:flex-end}
 .idx{display:grid;justify-items:start;line-height:1}
-.idx b{font:700 40px/.9 var(--f-display);color:#fff;text-shadow:0 0 12px rgba(var(--blue-a),.95),0 0 2px #fff}
+.idx b,.cab-n b{font:700 40px/.9 var(--f-display);color:#fff;text-shadow:0 0 12px rgba(var(--blue-a),.95),0 0 2px #fff}
+.cab-n{display:flex;align-items:baseline;gap:7px;line-height:1;min-width:0}
+.cab-n em{font:600 13.5px/1 var(--f-display);font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:var(--fg)}
+.cab-gen{flex:none;font:600 12px/1 var(--f-display);letter-spacing:.16em;color:var(--gold);padding-top:5px}
+.cab-st{display:block;line-height:1}
 .idx i{font:600 11.5px/1 var(--f-display);font-style:normal;letter-spacing:.16em;margin-top:6px;color:var(--gold)}
 .idx.rev{transform:rotate(180deg);opacity:.4}
 .idx.rev b{font-size:20px}
@@ -146,19 +155,20 @@ button.chip:active{transform:scale(.94)}
 .cab .price small{font:400 11px/1 var(--f-body);color:var(--muted);margin-left:3px}
 .cab.busy{border-color:rgba(var(--red-a),.6);color:var(--muted);box-shadow:0 0 12px rgba(var(--red-a),.2);
   background:repeating-linear-gradient(135deg,rgba(var(--red-a),.1) 0 5px,transparent 5px 11px),rgba(10,8,14,.86)}
-.cab.busy .idx b{color:#d9c6ca;text-shadow:0 0 10px rgba(var(--red-a),.75)}
+.cab.busy .idx b,.cab.busy .cab-n b{color:#d9c6ca;text-shadow:0 0 10px rgba(var(--red-a),.75)}
+.cab.busy .cab-n em{color:var(--muted)}
 .cab.busy .pill{color:#ff8497;border-color:rgba(var(--red-a),.8);background:rgba(var(--red-a),.12)}
 .cab.busy .cab-mid strong{color:#ffb3bf}
 .cab.picked{border-color:transparent;background:var(--grad);color:#fff;box-shadow:0 0 26px rgba(var(--violet-a),.75)}
-.cab.picked .cab-mid,.cab.picked .cab-mid strong,.cab.picked .price small,.cab.picked .idx i{color:#fff}
-.cab.picked .idx b{text-shadow:0 0 10px rgba(255,255,255,.7)}
+.cab.picked .cab-mid,.cab.picked .cab-mid strong,.cab.picked .price small,.cab.picked .idx i,.cab.picked .cab-n em,.cab.picked .cab-gen{color:#fff}
+.cab.picked .idx b,.cab.picked .cab-n b{text-shadow:0 0 10px rgba(255,255,255,.7)}
 .cab.picked .pill{color:#fff;background:rgba(0,0,0,.28);border-color:rgba(255,255,255,.75);box-shadow:none}
 .cab.flip{animation:flip .55s var(--ease)}
 @keyframes flip{0%{transform:perspective(700px) rotateY(0)}50%{transform:perspective(700px) rotateY(88deg)}100%{transform:perspective(700px) rotateY(0)}}
 
 /* ───── menu board ───── */
 .board{position:relative;margin-top:18px;padding:2px 14px 6px;border-radius:22px;border:1px solid rgba(255,255,255,.26);
-  background:var(--grain),var(--smoke) center/520px 520px,linear-gradient(180deg,rgba(14,12,20,.9),rgba(7,6,11,.92))}
+  background:var(--grain),linear-gradient(180deg,rgba(13,11,19,.76),rgba(7,6,11,.8))}
 .board .sec:first-child{padding-top:16px}
 .row{padding:12px 0 13px;border-bottom:1px solid rgba(255,255,255,.08)}
 .board>.row:last-child,.board>.line:last-child{border-bottom:0}
@@ -310,7 +320,7 @@ button.chip:active{transform:scale(.94)}
 /* ───── sheet + toast ───── */
 .scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .35s}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:520px;margin:0 auto;border-radius:24px 24px 0 0;
-  background:var(--grain),var(--smoke) center/520px 520px,var(--panel);box-shadow:0 -1.5px 0 rgba(var(--violet-a),.9),0 -12px 40px rgba(var(--violet-a),.35);
+  background:var(--grain),var(--panel);box-shadow:0 -1.5px 0 rgba(var(--violet-a),.9),0 -12px 40px rgba(var(--violet-a),.35);
   padding:10px var(--gr) calc(20px + env(safe-area-inset-bottom,0px)) var(--gl);max-height:88%;overflow-y:auto;
   transform:translateY(105%);visibility:hidden;transition:transform .5s cubic-bezier(.2,.9,.2,1),visibility 0s .5s}
 .sheet-open .scrim{opacity:1;pointer-events:auto}
@@ -337,12 +347,28 @@ button.chip:active{transform:scale(.94)}
 .deck.redeal .cab{animation:deal .5s var(--spring) both;animation-delay:calc(var(--i,0)*40ms)}
 @keyframes deal{from{opacity:0;transform:translate3d(0,46px,0) rotate(-7deg) scale(.92)}}
 @media (prefers-reduced-motion:reduce){
+  #face .core{animation:none}
   *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .puff{display:none}}
 @media (min-width:560px){.app{border-inline:1px solid var(--line)}}
 </style>
 
 <canvas id="fog" aria-hidden="true"></canvas>
+<svg id="face" viewBox="0 0 300 400" aria-hidden="true">
+  <defs><g id="face-lines">
+    <path d="M168 34 C136 30 108 52 100 88 C97 100 98 108 100 114 C101 120 97 126 95 131 C90 144 80 158 70 172 C65 179 66 186 74 188 C80 189 86 188 90 192 C93 196 90 202 88 206 C83 207 78 210 78 215 C78 220 84 221 91 221"/>
+    <path d="M90 229 C83 229 78 232 79 238 C80 243 88 244 92 248 C92 255 86 260 86 268 C87 281 98 289 112 288 C138 286 166 276 186 258 C196 249 201 238 202 226"/>
+    <path d="M118 289 C121 310 119 332 110 356"/>
+    <path d="M200 252 C203 290 210 324 226 356"/>
+    <path d="M110 128 C118 135 131 135 140 128"/>
+    <path d="M104 108 C116 99 133 98 147 104"/>
+    <path d="M199 150 C214 144 224 160 219 180 C216 194 205 200 199 192"/>
+    <path d="M168 34 C214 30 252 66 254 122 C255 160 243 190 232 214"/>
+  </g></defs>
+  <use href="#face-lines" class="glow"/><use href="#face-lines" class="core"/>
+  <circle id="face-mouth" cx="82" cy="225" r="1" stroke="none"/><circle id="face-aim" cx="42" cy="221" r="1" stroke="none"/>
+</svg>
+<canvas id="smoke" aria-hidden="true"></canvas>
 <div class="app" id="app">
   <header class="top">
     <div class="top-in gut">
@@ -367,7 +393,7 @@ button.chip:active{transform:scale(.94)}
 <nav class="tabs" aria-label="Разделы">
   <div class="tabs-in" id="tabs" role="tablist">
     <i class="tab-ind" aria-hidden="true"></i>
-    <button class="tab" role="tab" id="tab-cabins" data-act="go" data-tab="cabins"><span class="ico"><svg viewBox="0 0 24 24"><path d="M7.5 7h9a5 5 0 0 1 4.9 4l.9 4.6a2.6 2.6 0 0 1-4.5 2.2L15.6 15H8.4l-2.2 2.8a2.6 2.6 0 0 1-4.5-2.2L2.6 11a5 5 0 0 1 4.9-4z"/><path d="M8 10v3M6.5 11.5h3M15.5 10.5h.01M17.5 12.5h.01"/></svg></span>Кабинки</button>
+    <button class="tab" role="tab" id="tab-cabins" data-act="go" data-tab="cabins"><span class="ico"><svg viewBox="0 0 24 24"><path d="M7.5 7h9a5 5 0 0 1 4.9 4l.9 4.6a2.6 2.6 0 0 1-4.5 2.2L15.6 15H8.4l-2.2 2.8a2.6 2.6 0 0 1-4.5-2.2L2.6 11a5 5 0 0 1 4.9-4z"/><path d="M8 10v3M6.5 11.5h3M15.5 10.5h.01M17.5 12.5h.01"/></svg></span>Кабины</button>
     <button class="tab" role="tab" id="tab-hookah" data-act="go" data-tab="hookah"><span class="ico"><svg viewBox="0 0 24 24"><path d="M9.5 3.5h5l-.8 2.8h-3.4z"/><path d="M12 6.3v6.2"/><path d="M12 12.5c-2.2 1.9-4 3.4-4 6.2 0 1 .8 1.8 1.8 1.8h4.4c1 0 1.8-.8 1.8-1.8 0-2.8-1.8-4.3-4-6.2z"/><path d="M13.5 10.5c3.6-.2 6 1.6 6 5.5"/></svg></span>Кальяны</button>
     <button class="tab" role="tab" id="tab-drinks" data-act="go" data-tab="drinks"><span class="ico"><svg viewBox="0 0 24 24"><path d="M6.5 7h11l-1.3 13a1 1 0 0 1-1 .9H8.8a1 1 0 0 1-1-.9z"/><path d="M7 11.5h10"/><path d="M12 7l1.2-4H16"/></svg></span>Напитки</button>
     <button class="tab" role="tab" id="tab-snacks" data-act="go" data-tab="snacks"><span class="ico"><svg viewBox="0 0 24 24"><path d="M7 3.5h10l-1 3 1 11-1 3H8l-1-3 1-11z"/><path d="M10 11.5a2 2 0 1 0 4 0 2 2 0 0 0-4 0z"/></svg></span>Снеки</button>
@@ -376,7 +402,7 @@ button.chip:active{transform:scale(.94)}
 </nav>
 
 <div class="scrim" id="scrim" data-act="close"></div>
-<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Кабинка"><div class="grab" aria-hidden="true"></div><div id="sheet-body"></div></section>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Кабина"><div class="grab" aria-hidden="true"></div><div id="sheet-body"></div></section>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -436,7 +462,7 @@ function load() {
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
 let state = load();
-/* Живой режим: после первого ответа сервера остатки, кабинки и заказы общие для всех телефонов.
+/* Живой режим: после первого ответа сервера остатки, кабины и заказы общие для всех телефонов.
    Если сервер не ответил, страница работает как демо на данных из браузера. */
 let live = false, skew = 0, mutSeq = 0, lastSig = '';
 const me = {admin:false, user:false};
@@ -456,7 +482,7 @@ function tgTheme() { try {
 if (inTg) { try {
   tg.ready(); tg.expand(); tgTheme(); tg.onEvent && tg.onEvent('themeChanged', tgTheme);
   tg.disableVerticalSwipes && tg.disableVerticalSwipes();
-  const sp = tg.initDataUnsafe && tg.initDataUnsafe.start_param;      // QR кабинки: t.me/<bot>/<app>?startapp=cab3
+  const sp = tg.initDataUnsafe && tg.initDataUnsafe.start_param;      // QR кабины: t.me/<bot>/<app>?startapp=cab3
   if (sp && /^cab\d+$/.test(sp) && CAB[+sp.slice(3)]) state.place = sp.slice(3);
 } catch (e) {} }
 
@@ -478,7 +504,7 @@ const dayStartOf = t => Math.floor((t + TZ*MIN)/DAY)*DAY - TZ*MIN;
 const dayStart = d => dayStartOf(now()) + d*DAY;
 const dayName = t => { const d = Math.round((dayStartOf(t) - dayStart(0))/DAY), c = club(t);
   return d === 0 ? 'Сегодня' : d === 1 ? 'Завтра' : DOW[c.getUTCDay()] + ' ' + pad2(c.getUTCDate()) + '.' + pad2(c.getUTCMonth() + 1); };
-/* Брони кабинки: [начало, конец] без имён. */
+/* Брони кабины: [начало, конец] без имён. */
 const spans = n => ((state.booked && state.booked[n]) || []).filter(x => x[1] > now()).sort((a, b) => a[0] - b[0]);
 const held = n => { const x = spans(n).find(x => x[0] <= now()); return x ? x[1] : 0; };      // бронь уже идёт, гостя ждут
 const nextSpan = n => spans(n).find(x => x[0] > now());
@@ -500,13 +526,13 @@ const maxFor = id => {
   if (it.type === 'hookah') return Math.max(0, state.hookahFree - (hookahsInCart() - cartQ(id)));
   return state.stock[id] === null ? 20 : state.stock[id];
 };
-const placeName = p => p === 'hall' ? 'Зал' : 'Кабинка №' + p;
+const placeName = p => p === 'hall' ? 'Зал' : 'Кабина №' + p;
 const unitOf = it => it.unit ? it.unit.join(' ') : '';
 const fullName = it => it.type === 'hookah' ? 'Кальян «' + it.name + '»' : it.name + (it.unit ? ' ' + unitOf(it) : '');
 function cartLines() {
   const L = [];
   Object.keys(state.cart.cabins).forEach(n => { const c = CAB[n], h = state.cart.cabins[n];
-    L.push({id:'cab:' + n, name:'Кабинка №' + n + ' · ' + c.gen, sub: money(c.price) + ' в час', qty:h, sum:c.price*h, unit:'ч'}); });
+    L.push({id:'cab:' + n, name:'Кабина №' + n + ' · ' + c.gen, sub: money(c.price) + ' в час', qty:h, sum:c.price*h, unit:'ч'}); });
   Object.keys(state.cart.items).forEach(id => { const it = ITEMS[id], q = state.cart.items[id];
     L.push({id, name: it.type === 'hookah' ? 'Кальян «' + it.name + '»' : it.name,
             sub: [it.type === 'hookah' ? STRENGTH[it.str] : unitOf(it), money(it.price)].filter(Boolean).join(' · '), qty:q, sum:it.price*q, unit:''}); });
@@ -575,7 +601,7 @@ function promoHTML(i) {
     (P.terms ? '<p class="note">' + P.terms + (P.set ? ' Акцию-сет оформляет администратор.' : '') + '</p>' : '') + '</section>';
 }
 
-/* — Кабинки — */
+/* — Кабины — */
 const cabNote = c => [c.vip ? 'VIP' : '', c.color ? c.color[0].toUpperCase() + c.color.slice(1) + ' консоль' : '', c.tv || '', c.pads ? c.pads + ' геймпада' : ''].filter(Boolean).join(' · ');
 function cabCard(c, i) {
   const b = busy(c.n), hold = b ? 0 : held(c.n), off = b || hold, nx = off ? null : nextSpan(c.n), soon = nx && nx[0] - now() < 12*HOUR;
@@ -587,8 +613,9 @@ function cabCard(c, i) {
             : soon ? '<strong>до ' + hhmm(nx[0]) + '</strong>потом бронь'
             : cabNote(c);
   return '<button type="button" class="cab' + (off ? ' busy' : '') + (picked ? ' picked' : '') + '" data-act="cab" data-n="' + c.n + '" style="--i:' + i + '"' +
-    ' aria-label="Кабинка ' + c.n + ', ' + c.gen + ', ' + (b ? 'занята до ' + hhmm(b) : hold ? 'забронирована до ' + hhmm(hold) : 'свободна') + '">' +
-    '<span class="cab-top"><span class="idx">' + idx + '</span><span class="pill' + (off ? '' : ' on') + '">' + (b ? 'Занята' : hold ? 'Бронь' : picked ? 'Выбрана' : 'Свободна') + '</span></span>' +
+    ' aria-label="Кабина ' + c.n + ', ' + c.gen + ', ' + (b ? 'занята до ' + hhmm(b) : hold ? 'забронирована до ' + hhmm(hold) : 'свободна') + '">' +
+    '<span class="cab-top"><span class="cab-n"><b>' + c.n + '</b><em>кабина</em></span><span class="cab-gen">' + c.gen + '</span></span>' +
+    '<span class="cab-st"><span class="pill' + (off ? '' : ' on') + '">' + (b ? 'Занята' : hold ? 'Бронь' : picked ? 'Выбрана' : 'Свободна') + '</span></span>' +
     '<span class="cab-mid">' + mid + '</span>' +
     '<span class="cab-bot"><span class="price">' + money(c.price) + '<small>/час</small></span><span class="idx rev" aria-hidden="true">' + idx + '</span></span></button>';
 }
@@ -597,7 +624,7 @@ function viewCabins() {
   const gens = ['all'].concat([...new Set(CABINS.map(c => c.gen))]);
   const chips = '<div class="chips" id="cab-chips">' + gens.map(g => chip(g === 'all' ? 'Все ' + CABINS.length : g + ' · ' + CABINS.filter(c => c.gen === g).length,
     ui.cabFilter === g, 'cabf', 'data-g="' + g + '"')).join('') + '</div>';
-  return head('Кабинки PlayStation', freeCabs(), 'из ' + CABINS.length + ' свободно', chips, false, 'ps') + '<div class="deck" id="deck">' + deckHTML() + '</div>' + promoHTML(9) +
+  return head('Кабины PlayStation', freeCabs(), 'из ' + CABINS.length + ' свободно', chips, false, 'ps') + '<div class="deck" id="deck">' + deckHTML() + '</div>' + promoHTML(9) +
     '<section class="board rules" style="--i:10">' + sec('Правила клуба', 1, 0) +
     '<ul><li>Гостям младше 18 лет вход после 22:00 закрыт. До 22:00 для них действует скидка 10%.</li><li>Свою еду и напитки приносить нельзя.</li></ul>' +
     '<p class="tel">Администратор: <b>+998 77 265 32 77</b></p></section>';
@@ -713,12 +740,12 @@ function doneHTML(o) {
   return '<div class="done"><div class="hand" aria-hidden="true">' + cards + '</div>' +
     '<p class="eyebrow">' + (o.pay === 'card' ? 'Оплачено' : 'Оплата на кассе') + '</p><h2>Заказ №' + o.no + '</h2>' +
     '<p class="lead">' + money(o.total) + ' · ' + placeName(o.place) + '</p>' +
-    '<p>' + (o.place === 'hall' ? 'Назовите номер на кассе. Соберём заказ за пару минут.' : 'Принесём в кабинку №' + o.place + '. Номер заказа уже на кассе.') + '</p>' +
+    '<p>' + (o.place === 'hall' ? 'Назовите номер на кассе. Соберём заказ за пару минут.' : 'Принесём в кабину №' + o.place + '. Номер заказа уже на кассе.') + '</p>' +
     '<ul class="rcpt board">' + o.lines.map(l => '<li><span>' + l[0] + (l[1] > 1 ? ' × ' + l[1] : '') + '</span><span>' + money(l[2]) + '</span></li>').join('') + '</ul>' +
     '<button type="button" class="btn" data-act="again">Вернуться в меню</button></div>';
 }
 /* — Брони — */
-const BK_LABEL = {pending:'Ждёт подтверждения', confirmed:'Подтверждена', arrived:'Гость в кабинке', declined:'Отклонена', cancelled:'Отменена', noshow:'Гость не пришёл', expired:'Не подтверждена вовремя', done:'Завершена'};
+const BK_LABEL = {pending:'Ждёт подтверждения', confirmed:'Подтверждена', arrived:'Гость в кабине', declined:'Отклонена', cancelled:'Отменена', noshow:'Гость не пришёл', expired:'Не подтверждена вовремя', done:'Завершена'};
 const bkOpen = b => b.status === 'pending' || b.status === 'confirmed' || b.status === 'arrived';
 const sortBk = list => list.filter(b => CAB[b.n]).sort((a, b) => (bkOpen(b) - bkOpen(a)) || (bkOpen(a) ? a.start - b.start : b.start - a.start));
 function bkHTML(b, i, admin) {
@@ -726,7 +753,7 @@ function bkHTML(b, i, admin) {
   const acts = admin ? (b.status === 'pending' ? btn('decline', 'Отклонить', 1) + btn('confirm', 'Подтвердить')
                       : b.status === 'confirmed' ? btn('cancel', 'Отменить', 1) + btn('arrive', 'Гость пришёл') : '')
              : (b.status === 'pending' || b.status === 'confirmed') ? btn('cancel', 'Отменить бронь', 1) : '';
-  const label = !admin && b.status === 'arrived' ? 'Вы в кабинке' : !admin && b.status === 'noshow' ? 'Снята: вы не пришли' : BK_LABEL[b.status];
+  const label = !admin && b.status === 'arrived' ? 'Вы в кабине' : !admin && b.status === 'noshow' ? 'Снята: вы не пришли' : BK_LABEL[b.status];
   return '<article class="ord' + (bkOpen(b) ? '' : ' done-o') + (b.status === 'pending' ? ' wait' : '') + '" style="--i:' + i + '">' +
     '<header><b>№' + b.n + ' · ' + CAB[b.n].gen + '</b><em class="tag st ' + b.status + '">' + label + '</em></header>' +
     '<ul><li><span>' + dayName(b.start) + ', ' + hhmm(b.start) + '–' + hhmm(b.end) + ' · ' + hoursWord(b.h) + '</span></li>' +
@@ -742,8 +769,8 @@ function viewOrderGuest() {
     '<p class="fine">Заказ к брони можно собрать заранее или уже на месте.</p></div>';
   if (!L.length) return '<div class="vh"><p class="eyebrow">Ваш заказ</p></div>' + '<div class="empty"><div class="hand ghost" aria-hidden="true">' +
     [0,1,2,3,4].map(k => '<i style="--k:' + k + '"></i>').join('') + '</div><h2>Заказ пуст</h2>' +
-    '<p>Добавьте кабинку, кальян, напитки или снеки. Здесь появятся сумма и оплата.</p>' +
-    '<button type="button" class="btn" data-act="go" data-tab="cabins">Выбрать кабинку</button></div>';
+    '<p>Добавьте кабину, кальян, напитки или снеки. Здесь появятся сумма и оплата.</p>' +
+    '<button type="button" class="btn" data-act="go" data-tab="cabins">Выбрать кабину</button></div>';
   const places = chip('Зал', state.place === 'hall', 'place', 'data-p="hall"') + CABINS.map(c => chip('№' + c.n, state.place === String(c.n), 'place', 'data-p="' + c.n + '"')).join('');
   const pays = chip('Картой онлайн', state.pay === 'card', 'payby', 'data-p="card"') + chip('Наличными на кассе', state.pay === 'cash', 'payby', 'data-p="cash"');
   const total = cartTotal(), n = L.length;
@@ -772,7 +799,7 @@ function viewOrderAdmin() {
   return head(live ? 'Заказы и брони' : 'Заказы смены', w, w === 1 ? 'ждёт ответа' : 'ждут ответа',
     '<p class="note">Выручка смены: <b class="num">' + money(rev) + '</b> · заказов: ' + state.orders.length + '</p>') +
     (live ? sec('Брони', 0, 0, ' out-board') + (bks.length ? bks.map((b, i) => bkHTML(b, i + 1, true)).join('')
-        : '<p class="note tail">Броней нет. Заявка гостя появится здесь и придёт сообщением от бота. Бронь по звонку ставится из карточки кабинки.</p>') + sec('Заказы', 1, bks.length + 2, ' out-board') : '') +
+        : '<p class="note tail">Броней нет. Заявка гостя появится здесь и придёт сообщением от бота. Бронь по звонку ставится из карточки кабины.</p>') + sec('Заказы', 1, bks.length + 2, ' out-board') : '') +
     orders +
     '<div class="stack" style="--i:' + (state.orders.length + 1) + '"><button type="button" class="btn quiet" data-act="reset">' + (live ? 'Закрыть смену и очистить заказы' : 'Сбросить демо к началу') + '</button></div>';
 }
@@ -827,7 +854,7 @@ function sheetHTML() {
   const spec = (k, v) => v ? '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>' : '';
   const specs = '<dl class="specs">' + spec('Консоль', c.gen + (c.color ? ' · ' + c.color : '') + (c.vip ? ' · VIP-комната' : '')) + spec('Цена', money(c.price) + ' в час') +
     spec('Экран', c.tv) + spec('Геймпады', c.pads) + spec('Игры', c.games && c.games.join(', ')) + '</dl>';
-  let s = '<h2>Кабинка №' + n + '</h2><p class="state">' + (b ? 'Занята до ' + hhmm(b) + ' · ещё ' + dur(b) : hold ? 'Забронирована до ' + hhmm(hold) : 'Свободна · ' + money(c.price) + ' в час') + '</p>' + specs;
+  let s = '<h2>Кабина №' + n + '</h2><p class="state">' + (b ? 'Занята до ' + hhmm(b) + ' · ещё ' + dur(b) : hold ? 'Забронирована до ' + hhmm(hold) : 'Свободна · ' + money(c.price) + ' в час') + '</p>' + specs;
   if (live) {
     const sp = spans(n);
     if (sp.length) s += '<p class="note">Забронировано: ' + sp.map(x => dayName(x[0]).toLowerCase() + ' ' + hhmm(x[0]) + '–' + hhmm(x[1])).join(', ') + '.</p>';
@@ -842,7 +869,7 @@ function sheetHTML() {
   const hrs = '<div class="picker"><h4>' + (admin ? 'Занять на' : 'На сколько') + '</h4><div class="chips wrap">' +
     [1,2,3,5].map(x => (!admin && x > lim) ? '<span class="chip off">' + hoursWord(x) + '</span>' : chip(hoursWord(x), h === x, 'hours', 'data-h="' + x + '"')).join('') + '</div></div>';
   if (admin) s += b
-    ? '<div class="stack"><button type="button" class="btn" data-act="extend">Продлить на 30 минут</button><button type="button" class="btn ghost" data-act="release">Освободить кабинку</button></div>'
+    ? '<div class="stack"><button type="button" class="btn" data-act="extend">Продлить на 30 минут</button><button type="button" class="btn ghost" data-act="release">Освободить кабину</button></div>'
     : hrs + '<div class="stack"><button type="button" class="btn" data-act="occupy">Занять до ' + hhmm(now() + h*HOUR) + '</button></div>';
   else s += b
     ? '<div class="stack"><button type="button" class="btn ghost" data-act="close">Понятно</button></div>'
@@ -967,21 +994,21 @@ const ACT = {
     el.disabled = true; ++mutSeq;
     call('/api/booking', {action: act, id, asAdmin: ui.mode === 'admin'}).then(j => {
       applyServer(j); lastSig = sigOf(j); render(false); haptic('medium');
-      toast({confirm:'Бронь подтверждена, гостю написал бот', decline:'Бронь отклонена, гостю написал бот', cancel:'Бронь отменена', arrive:'Гость отмечен, кабинка занята'}[act]);
+      toast({confirm:'Бронь подтверждена, гостю написал бот', decline:'Бронь отклонена, гостю написал бот', cancel:'Бронь отменена', arrive:'Гость отмечен, кабина занята'}[act]);
     }).catch(e => { toast(e.message); ++mutSeq; lastSig = ''; sync(); });
   },
   book: () => { const n = ui.sheet.n, isNew = !state.cart.cabins[n]; state.cart.cabins[n] = ui.sheet.h;
     if (state.place === 'hall') state.place = String(n);
     save(); closeSheet(); refreshCabs(n); chrome(); haptic('medium');
     setTimeout(() => { if (isNew) fly($('.cab[data-n="' + n + '"] .pill')); else bump(); }, 320);
-    toast('Кабинка №' + n + ' в заказе на ' + hoursWord(state.cart.cabins[n])); },
+    toast('Кабина №' + n + ' в заказе на ' + hoursWord(state.cart.cabins[n])); },
   unbook: () => { const n = ui.sheet.n; delete state.cart.cabins[n]; if (state.place === String(n)) state.place = 'hall'; save(); closeSheet(); refreshCabs(n); chrome(); },
-  occupy: () => { const n = ui.sheet.n, h = ui.sheet.h; state.busy[n] = now() + h*HOUR; delete state.cart.cabins[n]; save(); push('occupy', {n, h}); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' занята до ' + hhmm(state.busy[n])); },
-  release: () => { const n = ui.sheet.n; delete state.busy[n]; save(); push('release', {n}); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' свободна'); },
-  extend: () => { const n = ui.sheet.n; state.busy[n] = busy(n) + 30*MIN; save(); push('extend', {n}); closeSheet(); refreshCabs(n); toast('Кабинка №' + n + ' продлена до ' + hhmm(state.busy[n])); },
+  occupy: () => { const n = ui.sheet.n, h = ui.sheet.h; state.busy[n] = now() + h*HOUR; delete state.cart.cabins[n]; save(); push('occupy', {n, h}); closeSheet(); refreshCabs(n); toast('Кабина №' + n + ' занята до ' + hhmm(state.busy[n])); },
+  release: () => { const n = ui.sheet.n; delete state.busy[n]; save(); push('release', {n}); closeSheet(); refreshCabs(n); toast('Кабина №' + n + ' свободна'); },
+  extend: () => { const n = ui.sheet.n; state.busy[n] = busy(n) + 30*MIN; save(); push('extend', {n}); closeSheet(); refreshCabs(n); toast('Кабина №' + n + ' продлена до ' + hhmm(state.busy[n])); },
   chg: el => {
     const id = el.dataset.id, d = +el.dataset.d;
-    if (id.startsWith('cab:')) {                                   // часы кабинки в заказе
+    if (id.startsWith('cab:')) {                                   // часы кабины в заказе
       const n = id.slice(4), h = (state.cart.cabins[n] || 0) + d;
       if (h > 8) return; if (h <= 0) delete state.cart.cabins[n]; else state.cart.cabins[n] = h;
       save(); chrome(); patchOrder(id, d); return;
@@ -1032,7 +1059,7 @@ const ACT = {
     setBig(waiting()); chrome(); toast('Заказ №' + o.no + ' выдан'); },
   cancel: el => { if (!sure(el, 'Точно отменить?')) return;
     const o = state.orders.find(x => x.no === +el.dataset.no); if (!o || o.status !== 'new') return;
-    if (o.raw) {                                                   // вернуть товар и освободить кабинки
+    if (o.raw) {                                                   // вернуть товар и освободить кабины
       for (const id in o.raw.items) { const it = ITEMS[id]; if (!it) continue;
         if (it.type === 'hookah') state.hookahFree = Math.min(HOOKAH_TOTAL, state.hookahFree + o.raw.items[id]); else if (state.stock[id] !== null) state.stock[id] += o.raw.items[id]; }
       for (const n in o.raw.cabins) if (state.busy[n] === o.raw.cabins[n]) delete state.busy[n];
@@ -1080,6 +1107,61 @@ if (inTg) {
   let prev = 0;
   const loop = t => { if (t - prev > 45) { prev = t; draw(t); } requestAnimationFrame(loop); };
   draw(0); if (!reduce) requestAnimationFrame(loop);
+})();
+/* Пар изо рта неонового лица. Частицы рисуются в холст половинного размера: так мягче и дешевле для телефона. */
+function startSmoke(canvas, mouth, opts) {
+  const ctx = canvas.getContext('2d'), SC = .5, rnd = Math.random, TAU = Math.PI * 2;
+  const tint = (opts && opts.tint) || '80,160,255', still = opts && opts.still;
+  // Клуб пара: несколько мягких пятен со случайным сдвигом дают рваный край, а не ровный кружок.
+  const puff = rgb => { const c = document.createElement('canvas'); c.width = c.height = 128; const q = c.getContext('2d');
+    for (let k = 0; k < 9; k++) { const x = 64 + (rnd() - .5) * 66, y = 64 + (rnd() - .5) * 66, r = 12 + rnd() * 22, g = q.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, 'rgba(' + rgb + ',.13)'); g.addColorStop(.55, 'rgba(' + rgb + ',.05)'); g.addColorStop(1, 'rgba(' + rgb + ',0)'); q.fillStyle = g; q.fillRect(0, 0, 128, 128); }
+    return c; };
+  const white = [0, 1, 2, 3, 4].map(() => puff('232,236,246')), lit = [0, 1, 2, 3, 4].map(() => puff(tint));
+  let W = 0, H = 0;
+  const fit = () => { W = canvas.width = Math.ceil(innerWidth * SC); H = canvas.height = Math.ceil(innerHeight * SC); };
+  fit(); addEventListener('resize', fit);
+  const P = [];
+  const CYCLE = 8, OUT = 3.6;                                      // выдох 3,6 с, потом пауза
+  let clock = 0, carry = 0;
+  function step(dt) {
+    clock += dt;
+    const ph = clock % CYCLE, power = ph < OUT ? Math.pow(Math.sin(Math.PI * ph / OUT), .6) : 0, m = mouth();
+    if (m && power > 0) {
+      carry += 46 * power * dt;
+      while (carry >= 1 && P.length < 340) { carry--;
+        const a = m.angle + (rnd() - .5) * .3, v = (150 + rnd() * 150) * (.4 + .6 * power) * m.scale;
+        P.push({ x: m.x + (rnd() - .5) * 3, y: m.y + (rnd() - .5) * 3, vx: Math.cos(a) * v, vy: Math.sin(a) * v, age: 0, life: 5 + rnd() * 5,
+          s0: (5 + rnd() * 6) * m.scale, s1: (90 + rnd() * 200) * m.scale, rot: rnd() * TAU, vr: (rnd() - .5) * .7, k: (rnd() * 5) | 0, a: .5 + rnd() * .45, seed: rnd() * 20 }); }
+    }
+    for (let i = P.length - 1; i >= 0; i--) { const p = P[i]; p.age += dt;
+      if (p.age >= p.life) { P.splice(i, 1); continue; }
+      const drag = Math.exp(-.95 * dt), calm = Math.min(1, p.age / 1.2); p.vx *= drag; p.vy *= drag;
+      p.vx += (Math.sin(p.y * .017 + clock * .9 + p.seed) * 34 + Math.sin(p.y * .006 - clock * .35) * 16) * calm * dt;   // завихрения
+      p.vy += (Math.cos(p.x * .015 + clock * .7 + p.seed) * 22 * calm - 26) * dt;                                           // и подъём тёплого пара
+      p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; }
+  }
+  function draw() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
+    for (const p of P) { const u = p.age / p.life, e = 1 - Math.pow(1 - u, 2.2), size = (p.s0 + (p.s1 - p.s0) * e) * SC;
+      const alpha = p.a * Math.min(1, p.age / .18) * Math.pow(1 - u, 1.9), glow = Math.max(0, 1 - p.age / 1.1);
+      ctx.setTransform(1, 0, 0, 1, p.x * SC, p.y * SC);
+      if (glow > 0) { ctx.rotate(Math.atan2(p.vy, p.vx)); ctx.scale(1 + glow * 1.5, 1 - glow * .45); } else ctx.rotate(p.rot);   // у рта струя вытянута
+      ctx.globalAlpha = alpha * (1 - glow * .6); ctx.drawImage(white[p.k], -size / 2, -size / 2, size, size);
+      if (glow > 0) { ctx.globalAlpha = alpha * glow; ctx.drawImage(lit[p.k], -size / 2, -size / 2, size, size); } }             // и подсвечена неоном
+  }
+  if (still) { for (let i = 0; i < 110; i++) step(1 / 30); draw(); return; }
+  let last = 0;
+  const loop = t => { if (t - last >= 32) { const dt = Math.min(.05, (t - last) / 1000 || .033); last = t; step(dt); draw(); } requestAnimationFrame(loop); };
+  for (let i = 0; i < 40; i++) step(1 / 30);                         // к первому кадру пар уже идёт
+  requestAnimationFrame(loop);
+}
+(function exhale() {
+  const c = $('#smoke'), face = $('#face'); if (!c || !c.getContext || !face) return;
+  const a = $('#face-mouth'), b = $('#face-aim');
+  const mouth = () => { const m = a.getBoundingClientRect(), t = b.getBoundingClientRect(), f = face.getBoundingClientRect();
+    return {x: m.left + m.width/2, y: m.top + m.height/2, angle: Math.atan2(t.top - m.top, t.left - m.left), scale: Math.max(.55, Math.min(1.5, f.height/520))}; };
+  startSmoke(c, mouth, {tint: '80,160,255', still: reduce});
 })();
 const start = location.hash.slice(1);
 if (TABS.includes(start)) ui.tab = start;

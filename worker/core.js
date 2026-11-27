@@ -1,5 +1,5 @@
 /**
- * Правила клуба без привязки к Cloudflare: остатки, кабинки, заказы, доступ к кассе.
+ * Правила клуба без привязки к Cloudflare: остатки, кабины, заказы, доступ к кассе.
  * Все функции получают состояние и меняют его на месте. При ошибке бросают Error с текстом для гостя.
  */
 export const HOUR = 36e5;
@@ -60,12 +60,12 @@ export function placeOrder(s, cat, idx, req, user, now) {
   let total = 0, hookahs = 0;
   for (const n of Object.keys(cabins)) {
     const c = idx.cabins[n], h = int(cabins[n]);
-    if (!c || !(h >= 1 && h <= 8)) fail('В заказе неверная кабинка. Обновите меню.');
-    if (s.busy[n] > now) fail(`Кабинка №${n} уже занята. Выберите другую.`);
+    if (!c || !(h >= 1 && h <= 8)) fail('В заказе неверная кабина. Обновите меню.');
+    if (s.busy[n] > now) fail(`Кабина №${n} уже занята. Выберите другую.`);
     const next = s.bookings.filter((b) => isActive(b) && b.n === Number(n) && b.start < now + h * HOUR && b.end > now).sort((a, b) => a.start - b.start)[0];
-    if (next) fail(next.start <= now ? `Кабинка №${n} сейчас забронирована. Выберите другую.`
-      : `Кабинка №${n} забронирована с ${fmtTime(next.start, cat.booking.tzMin)}. Возьмите её на меньшее время или выберите другую.`);
-    lines.push([`Кабинка №${n} · ${c.gen}, ${h} ч`, 1, c.price * h]);
+    if (next) fail(next.start <= now ? `Кабина №${n} сейчас забронирована. Выберите другую.`
+      : `Кабина №${n} забронирована с ${fmtTime(next.start, cat.booking.tzMin)}. Возьмите её на меньшее время или выберите другую.`);
+    lines.push([`Кабина №${n} · ${c.gen}, ${h} ч`, 1, c.price * h]);
     total += c.price * h;
   }
   for (const id of Object.keys(items)) {
@@ -116,15 +116,15 @@ export function adminAction(s, cat, idx, userId, action, p, now) {
       break;
     }
     case 'occupy':
-      if (!idx.cabins[p.n] || !(int(p.h) >= 1 && p.h <= 12)) fail('Неверная кабинка.');
+      if (!idx.cabins[p.n] || !(int(p.h) >= 1 && p.h <= 12)) fail('Неверная кабина.');
       s.busy[p.n] = now + p.h * HOUR;
       break;
     case 'release':
-      if (!idx.cabins[p.n]) fail('Неверная кабинка.');
+      if (!idx.cabins[p.n]) fail('Неверная кабина.');
       delete s.busy[p.n];
       break;
     case 'extend':
-      if (!idx.cabins[p.n]) fail('Неверная кабинка.');
+      if (!idx.cabins[p.n]) fail('Неверная кабина.');
       s.busy[p.n] = Math.max(s.busy[p.n] || 0, now) + 30 * MIN;
       break;
     case 'serve':
@@ -165,7 +165,7 @@ export function decideAccess(s, ownerId, targetId, allow) {
   return true;
 }
 
-/* ───────────── Бронь кабинок на время ───────────── */
+/* ───────────── Бронь кабин на время ───────────── */
 const pad = (n) => String(n).padStart(2, '0');
 const DOW = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
 /** Время клуба не зависит от часового пояса телефона или сервера. */
@@ -190,7 +190,7 @@ export function sweep(s, cat, now) {
   return changed;
 }
 
-// Время занято, если кабинка сейчас занята дольше начала брони или на него уже есть другая бронь.
+// Время занято, если кабина сейчас занята дольше начала брони или на него уже есть другая бронь.
 const overlaps = (s, n, start, end, now) =>
   (s.busy[n] > now && s.busy[n] > start) || s.bookings.some((b) => isActive(b) && b.n === n && b.start < end && b.end > start);
 
@@ -199,7 +199,7 @@ export function book(s, cat, idx, req, user, now) {
   const B = cat.booking, n = int(req.n), start = int(req.start), h = int(req.h);
   const byAdmin = !!req.asAdmin && isAdmin(s, user.id);
   const c = idx.cabins[n];
-  if (!c) fail('Такой кабинки нет. Обновите меню.');
+  if (!c) fail('Такой кабины нет. Обновите меню.');
   if (!B.hours.includes(h)) fail('Выберите длительность из списка.');
   if (!(start > 0) || start % (B.stepMin * MIN) !== 0) fail('Выберите время из списка.');
   if (start < now + (byAdmin ? 0 : B.leadMin * MIN)) fail('Это время уже прошло. Выберите другое.');
@@ -241,7 +241,7 @@ export function bookingAction(s, cat, idx, user, action, id, now, asAdmin) {
     s.busy[b.n] = b.end;
     const c = idx.cabins[b.n];
     s.orders.unshift({ no: s.nextNo++, t: now, place: String(b.n), pay: 'cash', status: 'done', total: b.price,
-      lines: [[`Кабинка №${b.n} · ${c.gen}, бронь ${b.h} ч`, 1, b.price]], raw: { items: {}, cabins: {} }, by: { id: b.by.id, name: b.by.name } });
+      lines: [[`Кабина №${b.n} · ${c.gen}, бронь ${b.h} ч`, 1, b.price]], raw: { items: {}, cabins: {} }, by: { id: b.by.id, name: b.by.name } });
     return { b };
   }
   fail('Неизвестное действие.');

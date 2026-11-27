@@ -2,7 +2,7 @@
  * Full House — сервер (Cloudflare Worker).
  *
  * 1. Бот: отвечает на /start, выдаёт доступ к кассе по /kassa, присылает кассе новые заказы.
- * 2. API для мини-приложения: общие остатки, кабинки и заказы для всех телефонов.
+ * 2. API для мини-приложения: общие остатки, кабины и заказы для всех телефонов.
  *
  * Секрет BOT_TOKEN (токен из BotFather) задаётся в настройках воркера, в коде его нет.
  * После каждого изменения списка команд открыть один раз:  https://<адрес-воркера>/setup
@@ -17,7 +17,7 @@ const money = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ' + c
 
 const WELCOME =
   'Добро пожаловать в Full House — smoke & play.\n\n' +
-  'В меню видно, какие кабинки PlayStation свободны и сколько они стоят, какие кальяны, напитки и снеки есть в наличии. ' +
+  'В меню видно, какие кабины PlayStation свободны и сколько они стоят, какие кальяны, напитки и снеки есть в наличии. ' +
   'Там же можно собрать заказ.\n\n' +
   'Администратор: +998 77 265 32 77';
 const HINT = 'Меню открывается кнопкой ниже.';
@@ -122,14 +122,14 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), { status
 const text = (body, status = 200) => new Response(body, { status, headers: { 'content-type': 'text/plain; charset=utf-8' } });
 
 function orderMessage(o) {
-  const place = o.place === 'hall' ? 'Зал' : 'Кабинка №' + o.place;
+  const place = o.place === 'hall' ? 'Зал' : 'Кабина №' + o.place;
   return `Новый заказ №${o.no}\nКуда: ${place}\nГость: ${o.by.name}\n\n` +
     o.lines.map((l) => `• ${l[0]}${l[1] > 1 ? ' × ' + l[1] : ''} — ${money(l[2])}`).join('\n') +
     `\n\nИтого: ${money(o.total)}, оплата на кассе`;
 }
 
 const TZ = catalog.booking.tzMin;
-const bookingLines = (b) => `Кабинка №${b.n} · ${idx.cabins[b.n].gen}\n${core.fmtSpan(b, TZ)} (${b.h} ч)\nСумма: ${money(b.price)}, оплата на кассе`;
+const bookingLines = (b) => `Кабина №${b.n} · ${idx.cabins[b.n].gen}\n${core.fmtSpan(b, TZ)} (${b.h} ч)\nСумма: ${money(b.price)}, оплата на кассе`;
 const bookingButtons = (b) => ({ inline_keyboard: [[{ text: 'Подтвердить', callback_data: 'bk:ok:' + b.id }, { text: 'Отклонить', callback_data: 'bk:no:' + b.id }]] });
 
 /** Кому и что написать после действия с бронью. */
@@ -140,11 +140,11 @@ function bookingNotices(env, action, r, actor) {
   if (action === 'confirm' && guest)
     out.push(send(env, guest, `Бронь подтверждена.\n${bookingLines(b)}\n\nПриходите к началу: через ${catalog.booking.graceMin} минут после него бронь снимается.`));
   if (action === 'decline' && guest)
-    out.push(send(env, guest, `Бронь не подтверждена: кабинка №${b.n}, ${core.fmtSpan(b, TZ)}. Выберите другое время в меню.`, openButton('Открыть меню')));
+    out.push(send(env, guest, `Бронь не подтверждена: кабина №${b.n}, ${core.fmtSpan(b, TZ)}. Выберите другое время в меню.`, openButton('Открыть меню')));
   if (action === 'cancel' && r.byGuest)
-    r.admins.forEach((id) => out.push(send(env, id, `Гость ${b.by.name} отменил бронь №${b.id}: кабинка №${b.n}, ${core.fmtSpan(b, TZ)}.`)));
+    r.admins.forEach((id) => out.push(send(env, id, `Гость ${b.by.name} отменил бронь №${b.id}: кабина №${b.n}, ${core.fmtSpan(b, TZ)}.`)));
   if (action === 'cancel' && !r.byGuest && guest)
-    out.push(send(env, guest, `Администратор отменил бронь: кабинка №${b.n}, ${core.fmtSpan(b, TZ)}. Вопросы: +998 77 265 32 77`));
+    out.push(send(env, guest, `Администратор отменил бронь: кабина №${b.n}, ${core.fmtSpan(b, TZ)}. Вопросы: +998 77 265 32 77`));
   if ((action === 'confirm' || action === 'decline') && others.length)
     others.forEach((id) => out.push(send(env, id, `Бронь №${b.id} ${action === 'confirm' ? 'подтверждена' : 'отклонена'}: ${actor.name || 'сотрудник'}.`)));
   return Promise.all(out);
